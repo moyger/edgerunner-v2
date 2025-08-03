@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { BrokerIntegration } from "./settings/BrokerIntegration";
-import { AccountSettings } from "./settings/AccountSettings";
-import { NotificationSettings } from "./settings/NotificationSettings";
-import { SecuritySettings } from "./settings/SecuritySettings";
-import { GeneralSettings } from "./settings/GeneralSettings";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../components/ui/tabs";
+import { BrokerIntegration } from "./BrokerIntegration";
+import { AccountSettings } from "./AccountSettings";
+import { NotificationSettings } from "./NotificationSettings";
+import { SecuritySettings } from "./SecuritySettings";
+import { GeneralSettings } from "./GeneralSettings";
 import { 
   Settings as SettingsIcon,
   Link,

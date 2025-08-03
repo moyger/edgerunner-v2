@@ -5,12 +5,12 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "./ui/sheet";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
+} from "../../../../components/ui/sheet";
+import { Button } from "../../../../components/ui/button";
+import { Input } from "../../../../components/ui/input";
+import { Label } from "../../../../components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Badge } from "../../../../components/ui/badge";
 import { Save, RotateCcw } from "lucide-react";
 
 interface StrategyEditSheetProps {

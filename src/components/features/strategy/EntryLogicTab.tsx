@@ -4,18 +4,18 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "../ui/card";
-import { Button } from "../ui/button";
+} from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
-import { Switch } from "../ui/switch";
-import { Badge } from "../ui/badge";
-import { Label } from "../ui/label";
+} from "../../../../components/ui/select";
+import { Switch } from "../../../../components/ui/switch";
+import { Badge } from "../../../../components/ui/badge";
+import { Label } from "../../../../components/ui/label";
 import {
   Plus,
   X,

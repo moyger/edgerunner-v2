@@ -1,5 +1,5 @@
-import { ThemeToggle } from "./ThemeToggle";
-import { Button } from "./ui/button";
+import { ThemeToggle } from "../shared/ThemeToggle";
+import { Button } from "../../../components/ui/button";
 import { Menu } from "lucide-react";
 
 interface TopBarProps {

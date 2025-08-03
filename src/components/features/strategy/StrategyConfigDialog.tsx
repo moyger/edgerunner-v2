@@ -4,9 +4,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+} from "../../../../components/ui/dialog";
+import { Badge } from "../../../../components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 
 interface StrategyConfigDialogProps {
   strategy: any;

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
+import { Badge } from "../../../../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../components/ui/tabs";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "../../../../components/ui/breadcrumb";
 import { 
   Save, 
   Copy, 
@@ -15,10 +15,10 @@ import {
   ChevronRight,
   Menu
 } from "lucide-react";
-import { EntryLogicTab } from "./strategy-builder/EntryLogicTab";
-import { ExitRiskTab } from "./strategy-builder/ExitRiskTab";
-import { BacktestTab } from "./strategy-builder/BacktestTab";
-import { UniverseFiltersTab } from "./strategy-builder/UniverseFiltersTab";
+import { EntryLogicTab } from "./EntryLogicTab";
+import { ExitRiskTab } from "./ExitRiskTab";
+import { BacktestTab } from "./BacktestTab";
+import { UniverseFiltersTab } from "./UniverseFiltersTab";
 
 interface StrategyBuilderProps {
   strategyName?: string;

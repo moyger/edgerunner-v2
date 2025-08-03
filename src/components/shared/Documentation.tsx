@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { Alert, AlertDescription } from "./ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { Input } from "../../../components/ui/input";
+import { Badge } from "../../../components/ui/badge";
+import { Separator } from "../../../components/ui/separator";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { 
   BookOpen,
   Code,
@@ -23,7 +23,7 @@ import {
   Percent,
   Shield
 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 
 interface GlossaryItem {
   term: string;

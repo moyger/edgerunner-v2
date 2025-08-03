@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Badge } from "../../../../components/ui/badge";
+import { Button } from "../../../../components/ui/button";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -26,11 +26,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "./ui/dropdown-menu";
-import { StrategyConfigDialog } from "./StrategyConfigDialog";
-import { StrategyEditSheet } from "./StrategyEditSheet";
-import { StrategyComparisonDialog } from "./StrategyComparisonDialog";
-import { TradeJournal } from "./TradeJournal";
+} from "../../../../components/ui/dropdown-menu";
+import { StrategyConfigDialog } from "../strategy/StrategyConfigDialog";
+import { StrategyEditSheet } from "../strategy/StrategyEditSheet";
+import { StrategyComparisonDialog } from "../strategy/StrategyComparisonDialog";
+import { TradeJournal } from "../journal/TradeJournal";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "./ui/alert-dialog";
+} from "../../../../components/ui/alert-dialog";
 
 // Mock data for the dashboard
 const accountData = {

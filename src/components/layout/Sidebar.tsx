@@ -10,9 +10,9 @@ import {
   Menu,
   ChevronLeft
 } from "lucide-react";
-import { Button } from "./ui/button";
-import { cn } from "./ui/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Button } from "../../../components/ui/button";
+import { cn } from "../../../components/ui/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 
 interface SidebarProps {
   activeTab: string;
