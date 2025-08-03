@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { TradeJournalPage } from "./components/TradeJournalPage";
@@ -7,65 +6,39 @@ import { Settings } from "./components/Settings";
 import { Documentation } from "./components/Documentation";
 import { TopBar } from "./components/TopBar";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { Button } from "./components/ui/button";
 import { Download, BarChart3 } from "lucide-react";
+import { useUIStore } from "./src/store/uiStore";
+import type { TabId } from "./src/types";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return "Dashboard";
-      case "strategies":
-        return "Strategies";
-      case "backtest":
-        return "Backtest";
-      case "journal":
-        return "Trade Journal";
-      case "settings":
-        return "Settings";
-      case "notifications":
-        return "Notifications";
-      case "docs":
-        return "Documentation";
-      default:
-        return "Dashboard";
-    }
-  };
-
-  const getPageSubtitle = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return "Real-time overview of your trading performance";
-      case "strategies":
-        return "Create and manage your algorithmic trading strategies";
-      case "backtest":
-        return "Test your strategies against historical market data";
-      case "journal":
-        return "Complete trading history and performance analytics";
-      case "settings":
-        return "Configure your trading environment and preferences";
-      case "notifications":
-        return "Stay informed with real-time alerts and updates";
-      case "docs":
-        return "Learn how to maximize your trading performance";
-      default:
-        return "Real-time overview of your trading performance";
-    }
-  };
+  // Use Zustand store instead of local state - preserves exact same behavior
+  const { 
+    activeTab, 
+    sidebarCollapsed, 
+    setActiveTab, 
+    setSidebarCollapsed,
+    getPageTitle,
+    getPageSubtitle 
+  } = useUIStore();
 
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />;
+        return (
+          <ErrorBoundary>
+            <Dashboard />
+          </ErrorBoundary>
+        );
       case "strategies":
         return (
-          <StrategyBuilder 
-            sidebarCollapsed={sidebarCollapsed}
-            onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
+          <ErrorBoundary>
+            <StrategyBuilder 
+              sidebarCollapsed={sidebarCollapsed}
+              onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            />
+          </ErrorBoundary>
         );
       case "backtest":
         return (
@@ -74,9 +47,17 @@ export default function App() {
           </div>
         );
       case "journal":
-        return <TradeJournalPage />;
+        return (
+          <ErrorBoundary>
+            <TradeJournalPage />
+          </ErrorBoundary>
+        );
       case "settings":
-        return <Settings />;
+        return (
+          <ErrorBoundary>
+            <Settings />
+          </ErrorBoundary>
+        );
       case "notifications":
         return (
           <div className="flex-1 p-6">
@@ -84,9 +65,17 @@ export default function App() {
           </div>
         );
       case "docs":
-        return <Documentation />;
+        return (
+          <ErrorBoundary>
+            <Documentation />
+          </ErrorBoundary>
+        );
       default:
-        return <Dashboard />;
+        return (
+          <ErrorBoundary>
+            <Dashboard />
+          </ErrorBoundary>
+        );
     }
   };
 
@@ -94,8 +83,8 @@ export default function App() {
     <ThemeProvider>
       <div className="h-screen flex bg-background">
         <Sidebar 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab}
+          activeTab={activeTab as TabId} 
+          onTabChange={(tab) => setActiveTab(tab as TabId)}
           isCollapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
