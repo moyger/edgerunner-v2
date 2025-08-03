@@ -158,6 +158,18 @@ export interface RealTimeUpdate {
   timestamp: string;
 }
 
+// IBKR Integration Types
+export interface IBKRState {
+  isConnected: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error' | 'reconnecting';
+  marketDataStatus: 'inactive' | 'connecting' | 'active' | 'error';
+  lastError: any | null;
+  connectionHealth: any | null;
+  accountSummary: any | null;
+  activeSubscriptions: Map<string, any>;
+  realTimeData: Map<string, any>;
+}
+
 // Error Types
 export interface AppError {
   code: string;

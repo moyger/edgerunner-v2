@@ -2,6 +2,7 @@ import { Sidebar } from "./src/components/layout/Sidebar";
 import { Dashboard } from "./src/components/features/dashboard/Dashboard";
 import { TradeJournalPage } from "./src/components/features/journal/TradeJournalPage";
 import { StrategyBuilder } from "./src/components/features/strategy/StrategyBuilder";
+import { Backtest } from "./src/components/features/backtest/Backtest";
 import { Settings } from "./src/components/features/settings/Settings";
 import { Documentation } from "./src/components/shared/Documentation";
 import { TopBar } from "./src/components/layout/TopBar";
@@ -42,9 +43,9 @@ export default function App() {
         );
       case "backtest":
         return (
-          <div className="flex-1 p-6">
-            <p className="text-muted-foreground">Backtesting engine coming soon...</p>
-          </div>
+          <ErrorBoundary>
+            <Backtest />
+          </ErrorBoundary>
         );
       case "journal":
         return (
