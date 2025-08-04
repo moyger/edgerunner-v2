@@ -592,11 +592,13 @@ export const useIBKRStore = create<IBKRStore>()(
         },
         
         getDayChange: () => {
-          return get().realTimePortfolioValue?.dayChange || 0;
+          const portfolio = get().calculateRealTimePortfolioValue();
+          return portfolio.dayChange || 0;
         },
         
         getDayChangePercent: () => {
-          return get().realTimePortfolioValue?.dayChangePercent || 0;
+          const portfolio = get().calculateRealTimePortfolioValue();
+          return portfolio.dayChangePercent || 0;
         },
         
         // ===== UTILITY ACTIONS =====

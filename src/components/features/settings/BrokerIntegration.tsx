@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
@@ -21,14 +21,9 @@ import {
   Settings,
   Plus,
   Info,
-  ExternalLink,
-  Wifi,
-  WifiOff
+  ExternalLink
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../../components/ui/tooltip";
-import { useIBKRConnection } from "../../../store/ibkrStore";
-import ConnectionDialog from "../../ibkr/ConnectionDialog";
-import ConnectionStatus from "../../ibkr/ConnectionStatus";
 
 interface BrokerConfig {
   id: string;
@@ -46,41 +41,15 @@ interface BrokerConfig {
 }
 
 export function BrokerIntegration() {
-  // Re-enable IBKR store connection with error handling
-  let ibkrData;
-  try {
-    ibkrData = useIBKRConnection();
-  } catch (error) {
-    console.error('IBKR connection hook error:', error);
-    ibkrData = { 
-      isConnected: false, 
-      connectionStatus: 'disconnected' as const, 
-      disconnect: () => {},
-      connect: async () => {},
-      connectionHealth: null,
-      lastError: null
-    };
-  }
-  
-  const { isConnected, connectionStatus, disconnect } = ibkrData;
   const [defaultBroker, setDefaultBroker] = useState("alpaca");
   const [showApiKey, setShowApiKey] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState(false);
-  const [expandedBrokers, setExpandedBrokers] = useState<Set<string>>(new Set(["alpaca", "interactive_brokers"]));
-  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
-  
-  // Memoize IBKR status calculation to prevent unnecessary re-renders
-  const ibkrStatus = useMemo(() => {
-    if (isConnected) return "connected";
-    if (connectionStatus === "connecting" || connectionStatus === "reconnecting") return "connecting";
-    if (connectionStatus === "error") return "disconnected";
-    return "disconnected";
-  }, [isConnected, connectionStatus]);
+  const [expandedBrokers, setExpandedBrokers] = useState<Set<string>>(new Set(["alpaca"]));
   
   const [brokers, setBrokers] = useState<BrokerConfig[]>([
     {
       id: "alpaca",
-      name: "Alpaca", 
+      name: "Alpaca",
       status: "connected",
       isDefault: true,
       config: {
@@ -92,12 +61,12 @@ export function BrokerIntegration() {
     {
       id: "interactive_brokers",
       name: "Interactive Brokers",
-      status: ibkrStatus,
+      status: "coming_soon",
       isDefault: false,
       config: {
         username: "",
         port: "7497",
-        enabled: isConnected
+        enabled: false
       }
     },
     {
@@ -116,48 +85,39 @@ export function BrokerIntegration() {
     }
   ]);
 
-  const updateBrokerConfig = useCallback((brokerId: string, field: string, value: string | boolean) => {
-    setBrokers(prevBrokers => prevBrokers.map(broker => 
+  const updateBrokerConfig = (brokerId: string, field: string, value: string | boolean) => {
+    setBrokers(brokers.map(broker => 
       broker.id === brokerId 
         ? { ...broker, config: { ...broker.config, [field]: value } }
         : broker
     ));
-  }, []);
+  };
 
-  const toggleBrokerExpansion = useCallback((brokerId: string) => {
-    setExpandedBrokers(prev => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(brokerId)) {
-        newExpanded.delete(brokerId);
-      } else {
-        newExpanded.add(brokerId);
-      }
-      return newExpanded;
-    });
-  }, []);
+  const toggleBrokerExpansion = (brokerId: string) => {
+    const newExpanded = new Set(expandedBrokers);
+    if (newExpanded.has(brokerId)) {
+      newExpanded.delete(brokerId);
+    } else {
+      newExpanded.add(brokerId);
+    }
+    setExpandedBrokers(newExpanded);
+  };
 
-  const handleSetDefault = useCallback((brokerId: string) => {
+  const handleSetDefault = (brokerId: string) => {
     setDefaultBroker(brokerId);
-    setBrokers(prevBrokers => prevBrokers.map(broker => ({
+    setBrokers(brokers.map(broker => ({
       ...broker,
       isDefault: broker.id === brokerId
     })));
-  }, []);
+  };
 
-  const getStatusBadge = useCallback((status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "connected":
         return (
           <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800">
             <CheckCircle className="h-3 w-3 mr-1" />
             Connected
-          </Badge>
-        );
-      case "connecting":
-        return (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800">
-            <Settings className="h-3 w-3 mr-1 animate-spin" />
-            Connecting...
           </Badge>
         );
       case "disconnected":
@@ -184,9 +144,9 @@ export function BrokerIntegration() {
       default:
         return null;
     }
-  }, []);
+  };
 
-  const getBrokerIcon = useCallback((brokerId: string) => {
+  const getBrokerIcon = (brokerId: string) => {
     // In a real app, these would be actual broker logos
     const icons: Record<string, string> = {
       alpaca: "🦙",
@@ -195,13 +155,11 @@ export function BrokerIntegration() {
       custom: "⚙️"
     };
     return icons[brokerId] || "🔗";
-  }, []);
+  };
 
-  const getConnectedBrokers = useCallback(() => {
+  const getConnectedBrokers = () => {
     return brokers.filter(broker => broker.status === "connected");
-  }, [brokers]);
-
-  const connectedBrokers = useMemo(() => getConnectedBrokers(), [getConnectedBrokers]);
+  };
 
   return (
     <TooltipProvider>
@@ -218,9 +176,9 @@ export function BrokerIntegration() {
           {/* Global Status */}
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <div className="text-sm font-medium">{connectedBrokers.length} Connected</div>
+              <div className="text-sm font-medium">{getConnectedBrokers().length} Connected</div>
               <div className="text-xs text-muted-foreground">
-                {connectedBrokers.length > 0 ? "Ready for trading" : "No brokers connected"}
+                {getConnectedBrokers().length > 0 ? "Ready for trading" : "No brokers connected"}
               </div>
             </div>
             <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
@@ -437,67 +395,33 @@ export function BrokerIntegration() {
 
                     {/* Interactive Brokers Configuration */}
                     {broker.id === "interactive_brokers" && (
-                      <div className="space-y-6">
-                        {/* Connection Status - Now fixed */}
-                        <ConnectionStatus showDetails={true} />
-
-                        {/* Connection Actions */}
-                        <div className="flex items-center gap-3">
-                          {!isConnected ? (
-                            <ConnectionDialog
-                              open={showConnectionDialog}
-                              onOpenChange={setShowConnectionDialog}
-                            >
-                              <Button className="bg-blue-600 hover:bg-blue-700">
-                                <Wifi className="h-4 w-4 mr-2" />
-                                Connect to IBKR
-                              </Button>
-                            </ConnectionDialog>
-                          ) : (
-                            <Button 
-                              variant="destructive" 
-                              onClick={() => disconnect()}
-                            >
-                              <WifiOff className="h-4 w-4 mr-2" />
-                              Disconnect
-                            </Button>
-                          )}
-                          
-                          <Button variant="outline">
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            TWS/Gateway Setup
-                          </Button>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-50">
+                          <div className="space-y-2">
+                            <Label>Username</Label>
+                            <Input placeholder="IB Username" disabled />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>TWS Port</Label>
+                            <Input placeholder="7497" disabled />
+                          </div>
                         </div>
 
-                        {/* Setup Instructions */}
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg opacity-50">
+                          <Label>Enable IB Gateway</Label>
+                          <Switch disabled />
+                        </div>
+
                         <Alert>
-                          <Info className="h-4 w-4" />
+                          <AlertCircle className="h-4 w-4" />
                           <AlertDescription>
-                            <div className="space-y-2">
-                              <div className="font-medium">Before connecting to IBKR:</div>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
-                                <li>Install and run TWS (Trader Workstation) or IB Gateway</li>
-                                <li>Enable API connections in TWS Global Configuration</li>
-                                <li>Set socket port to 7497 (TWS) or 4001 (Gateway)</li>
-                                <li>Add 127.0.0.1 to trusted IPs if using localhost</li>
-                              </ul>
-                            </div>
+                            Interactive Brokers integration is coming soon. Sign up for updates to be notified when it's available.
                           </AlertDescription>
                         </Alert>
 
-                        {/* Live vs Paper Trading Warning */}
-                        {isConnected && (
-                          <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
-                            <AlertCircle className="h-4 w-4 text-yellow-600" />
-                            <AlertDescription className="text-yellow-800 dark:text-yellow-400">
-                              <div className="font-medium">Trading Mode Warning</div>
-                              <div className="text-sm mt-1">
-                                Always verify you're connected to the correct account (Paper vs Live) before executing any trades.
-                                Paper trading is recommended for testing strategies.
-                              </div>
-                            </AlertDescription>
-                          </Alert>
-                        )}
+                        <Button variant="outline" disabled>
+                          Coming Soon
+                        </Button>
                       </div>
                     )}
 

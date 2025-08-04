@@ -332,12 +332,9 @@ export interface WebSocketMessage {
 // ===== VALIDATION SCHEMAS =====
 
 export const IBKRCredentialsSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
-  connectionPort: z.number().int().min(1000).max(65535),
-  clientId: z.number().int().min(1).max(2147483647),
-  isPaper: z.boolean(),
-  host: z.string().ip().optional().default('127.0.0.1')
+  host: z.string().default('127.0.0.1'),
+  port: z.number().int().min(1000).max(65535),
+  clientId: z.number().int().min(1).max(2147483647)
 });
 
 export const OrderRequestSchema = z.object({

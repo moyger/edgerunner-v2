@@ -278,7 +278,7 @@ export class MockTradingApiService extends TradingApiService {
 
   constructor() {
     super({
-      baseUrl: 'http://localhost:3003/api',
+      baseUrl: 'http://localhost:3001/api',
       timeout: 5000,
       retries: 3,
     });

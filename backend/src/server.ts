@@ -3,23 +3,29 @@ import http from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
-import { IBKRService } from './services/IBKRServiceSimplified';
+import { RealPnLIBKRService } from './services/RealPnLIBKRService';
 import { WebSocketService } from './services/WebSocketService';
 import { IBKRCredentialsSchema, OrderRequestSchema, MarketDataSubscriptionSchema } from './types/ibkr';
 import logger, { apiLogger, logAPIRequest, logError } from './utils/logger';
 import config from './config';
+import './types/express'; // Extend Express request types
+import { AuthService, User } from './services/AuthService';
+import { ErrorHandler } from './utils/ErrorHandler';
+import { CircuitBreakerManager } from './utils/CircuitBreaker';
+import { RetryMechanism } from './utils/RetryMechanism';
 
 class EdgerunnerIBKRProxy {
   private app: express.Application;
   private server: http.Server;
-  private ibkrService: IBKRService;
+  private ibkrService: RealPnLIBKRService;
   private wsService: WebSocketService;
 
   constructor() {
     this.app = express();
     this.server = http.createServer(this.app);
-    this.ibkrService = new IBKRService();
+    this.ibkrService = new RealPnLIBKRService();
     this.wsService = new WebSocketService();
 
     this.setupMiddleware();
@@ -68,6 +74,7 @@ class EdgerunnerIBKRProxy {
     // Body parsing
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    this.app.use(cookieParser());
 
     // Request logging
     this.app.use((req, res, next) => {
@@ -103,33 +110,105 @@ class EdgerunnerIBKRProxy {
       res.json(health);
     });
 
-    // Authentication
+    // Authentication Routes
     this.app.post('/api/auth/login', async (req, res) => {
       try {
-        const { username, password } = req.body;
-        
-        // In production, implement proper user authentication
-        // For now, generate a JWT token
-        const token = jwt.sign(
-          { userId: username, timestamp: Date.now() },
-          config.security.jwtSecret,
-          { expiresIn: '24h' }
-        );
+        const correlationId = ErrorHandler.generateCorrelationId();
+        req.correlationId = correlationId;
 
-        res.json({
-          success: true,
-          token,
-          user: { id: username, username }
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+          const error = ErrorHandler.badRequest('Email and password are required');
+          return ErrorHandler.sendError(res, error);
+        }
+
+        const authResult = await AuthService.login(email, password);
+        
+        // Set refresh token as httpOnly cookie
+        res.cookie('refreshToken', authResult.refreshToken, {
+          httpOnly: true,
+          secure: config.nodeEnv === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
+        ErrorHandler.sendSuccess(res, {
+          user: authResult.user,
+          accessToken: authResult.accessToken,
+          expiresIn: authResult.expiresIn
+        }, 200, correlationId);
+
       } catch (error) {
-        logError(error as Error, { context: 'auth/login' });
-        res.status(500).json({ success: false, message: 'Authentication failed' });
+        const structuredError = ErrorHandler.handleError(error, req);
+        ErrorHandler.sendError(res, structuredError);
+      }
+    });
+
+    this.app.post('/api/auth/refresh', async (req, res) => {
+      try {
+        const correlationId = ErrorHandler.generateCorrelationId();
+        req.correlationId = correlationId;
+
+        const refreshToken = req.cookies?.refreshToken;
+        
+        if (!refreshToken) {
+          const error = ErrorHandler.unauthorized('Refresh token required');
+          return ErrorHandler.sendError(res, error);
+        }
+
+        const result = await AuthService.refreshAccessToken(refreshToken);
+        
+        ErrorHandler.sendSuccess(res, result, 200, correlationId);
+
+      } catch (error) {
+        const structuredError = ErrorHandler.handleError(error, req);
+        ErrorHandler.sendError(res, structuredError);
+      }
+    });
+
+    this.app.post('/api/auth/logout', async (req, res) => {
+      try {
+        const correlationId = ErrorHandler.generateCorrelationId();
+        req.correlationId = correlationId;
+
+        const refreshToken = req.cookies?.refreshToken;
+        
+        if (refreshToken) {
+          await AuthService.logout(refreshToken);
+        }
+
+        res.clearCookie('refreshToken');
+        ErrorHandler.sendSuccess(res, { message: 'Logged out successfully' }, 200, correlationId);
+
+      } catch (error) {
+        const structuredError = ErrorHandler.handleError(error, req);
+        ErrorHandler.sendError(res, structuredError);
+      }
+    });
+
+    this.app.get('/api/auth/me', this.authenticateToken, async (req, res) => {
+      try {
+        const correlationId = ErrorHandler.generateCorrelationId();
+        req.correlationId = correlationId;
+
+        const user = await AuthService.getUserById(req.user!.id);
+        
+        if (!user) {
+          const error = ErrorHandler.notFound('User');
+          return ErrorHandler.sendError(res, error);
+        }
+
+        ErrorHandler.sendSuccess(res, user, 200, correlationId);
+
+      } catch (error) {
+        const structuredError = ErrorHandler.handleError(error, req);
+        ErrorHandler.sendError(res, structuredError);
       }
     });
 
     // IBKR connection management
-    this.app.post('/api/ibkr/connect', this.authenticateToken, async (req, res) => {
+    this.app.post('/api/ibkr/connect', async (req, res) => {
       try {
         const credentials = IBKRCredentialsSchema.parse(req.body);
         await this.ibkrService.connect(credentials);
@@ -171,7 +250,7 @@ class EdgerunnerIBKRProxy {
     this.app.post('/api/market-data/subscribe', this.authenticateToken, async (req, res) => {
       try {
         const { symbols, fields } = MarketDataSubscriptionSchema.parse(req.body);
-        const subscriptionId = await this.ibkrService.subscribeToMarketData(symbols, fields);
+        const subscriptionId = await this.ibkrService.subscribeToMarketData(symbols);
         
         res.json({
           success: true,
@@ -264,9 +343,9 @@ class EdgerunnerIBKRProxy {
     });
 
     // Portfolio data
-    this.app.get('/api/positions', this.authenticateToken, (req, res) => {
+    this.app.get('/api/positions', (req, res) => {
       try {
-        const positions = this.ibkrService.getPositions();
+        const positions = this.ibkrService.getPositionsForAPI();
         res.json({
           success: true,
           positions
@@ -281,9 +360,56 @@ class EdgerunnerIBKRProxy {
       }
     });
 
-    this.app.get('/api/account', this.authenticateToken, (req, res) => {
+    // Real P&L positions endpoint
+    this.app.get('/api/positions/real-pnl', this.authenticateToken, (req, res) => {
       try {
-        const accountSummary = this.ibkrService.getAccountSummary();
+        const positions = this.ibkrService.getPositionsWithRealPnL();
+        res.json({
+          success: true,
+          positions,
+          hasRealPnLData: this.ibkrService.hasPortfolioPnLData(),
+          totalPositions: positions.length,
+          positionsWithPnL: positions.filter(p => p.hasRealPnL).length
+        });
+
+      } catch (error) {
+        logError(error as Error, { context: 'positions/real-pnl/get' });
+        res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve real P&L positions'
+        });
+      }
+    });
+
+    // P&L diagnostics endpoint
+    this.app.get('/api/pnl/diagnostics', this.authenticateToken, (req, res) => {
+      try {
+        const diagnostics = {
+          receivedEvents: this.ibkrService.getReceivedEvents(),
+          portfolioUpdates: Array.from(this.ibkrService.getPortfolioUpdates().entries()),
+          accountPnL: Array.from(this.ibkrService.getAllAccountPnL().entries()),
+          hasPortfolioPnL: this.ibkrService.hasPortfolioPnLData(),
+          connectionHealth: this.ibkrService.getConnectionHealth(),
+          timestamp: new Date().toISOString()
+        };
+
+        res.json({
+          success: true,
+          diagnostics
+        });
+
+      } catch (error) {
+        logError(error as Error, { context: 'pnl/diagnostics/get' });
+        res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve P&L diagnostics'
+        });
+      }
+    });
+
+    this.app.get('/api/account', (req, res) => {
+      try {
+        const accountSummary = this.ibkrService.getAccountSummaryForAPI();
         res.json({
           success: true,
           account: accountSummary
@@ -298,8 +424,8 @@ class EdgerunnerIBKRProxy {
       }
     });
 
-    // Connection health
-    this.app.get('/api/connection-health', this.authenticateToken, (req, res) => {
+    // Connection health (no auth for dev data viewing)
+    this.app.get('/api/connection-health', (req, res) => {
       try {
         const health = this.ibkrService.getConnectionHealth();
         res.json({
@@ -312,6 +438,73 @@ class EdgerunnerIBKRProxy {
         res.status(500).json({
           success: false,
           message: 'Failed to retrieve connection health'
+        });
+      }
+    });
+
+    // Portfolio performance endpoint (for dashboard)
+    this.app.get('/api/portfolio/performance', (req, res) => {
+      try {
+        const positions = this.ibkrService.getPositions();
+        const accountSummary = this.ibkrService.getAccountSummary();
+        
+        // Calculate portfolio performance metrics
+        const totalMarketValue = positions.reduce((sum, pos) => sum + (pos.marketValue || 0), 0);
+        const totalUnrealizedPnL = positions.reduce((sum, pos) => sum + (pos.unrealizedPnL || 0), 0);
+        const totalRealizedPnL = positions.reduce((sum, pos) => sum + (pos.realizedPnL || 0), 0);
+        
+        const performance = {
+          totalValue: accountSummary.totalEquity || totalMarketValue,
+          dayPnL: accountSummary.dayPnL || 0,
+          totalPnL: totalUnrealizedPnL + totalRealizedPnL,
+          unrealizedPnL: totalUnrealizedPnL,
+          realizedPnL: totalRealizedPnL,
+          cash: accountSummary.totalCashValue || 0,
+          positionCount: positions.length,
+          lastUpdate: new Date().toISOString()
+        };
+
+        res.json({
+          success: true,
+          performance
+        });
+
+      } catch (error) {
+        logError(error as Error, { context: 'portfolio/performance' });
+        res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve portfolio performance'
+        });
+      }
+    });
+
+    // Market data endpoint (for dashboard)
+    this.app.get('/api/market-data', this.authenticateToken, (req, res) => {
+      try {
+        const positions = this.ibkrService.getPositions();
+        
+        // Create market data from positions
+        const marketData = positions.map(pos => ({
+          symbol: pos.symbol,
+          lastPrice: pos.marketPrice || (pos.marketValue / pos.quantity) || 0,
+          change: pos.unrealizedPnL || 0,
+          changePercent: pos.avgCost > 0 ? ((pos.unrealizedPnL || 0) / (pos.avgCost * pos.quantity)) * 100 : 0,
+          volume: 0, // Not available from IBKR position data
+          marketValue: pos.marketValue || 0,
+          timestamp: new Date().toISOString()
+        }));
+
+        res.json({
+          success: true,
+          marketData,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (error) {
+        logError(error as Error, { context: 'market-data/get' });
+        res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve market data'
         });
       }
     });
@@ -347,22 +540,35 @@ class EdgerunnerIBKRProxy {
     });
   }
 
-  private authenticateToken(req: express.Request & { user?: any }, res: express.Response, next: express.NextFunction): void {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      res.status(401).json({ success: false, message: 'Access token required' });
-      return;
-    }
-
+  private async authenticateToken(req: express.Request & { user?: any }, res: express.Response, next: express.NextFunction): Promise<void> {
     try {
-      const decoded = jwt.verify(token, config.security.jwtSecret);
-      req.user = decoded;
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+
+      if (!token) {
+        const error = ErrorHandler.unauthorized('Access token required');
+        ErrorHandler.sendError(res, error);
+        return;
+      }
+
+      // Verify token using AuthService
+      const tokenPayload = await AuthService.verifyAccessToken(token);
+      
+      // Get full user details
+      const user = await AuthService.getUserById(tokenPayload.userId);
+      if (!user) {
+        const error = ErrorHandler.unauthorized('User not found');
+        ErrorHandler.sendError(res, error);
+        return;
+      }
+
+      // Attach user to request
+      req.user = user;
       next();
+      
     } catch (error) {
-      res.status(403).json({ success: false, message: 'Invalid or expired token' });
-      return;
+      const structuredError = ErrorHandler.handleError(error, req);
+      ErrorHandler.sendError(res, structuredError);
     }
   }
 
@@ -414,6 +620,12 @@ class EdgerunnerIBKRProxy {
 
     this.ibkrService.on('accountUpdate', (accountSummary) => {
       this.wsService.handleAccountUpdate(accountSummary);
+    });
+
+    // Real P&L specific events
+    this.ibkrService.on('positionPnLUpdate', (position) => {
+      logger.info(`Real P&L update for ${position.symbol}: $${position.unrealizedPnL}`);
+      this.wsService.handlePositionUpdate(position);
     });
   }
 
@@ -471,7 +683,7 @@ class EdgerunnerIBKRProxy {
 
     this.wsService.on('getPositions', (clientId) => {
       try {
-        const positions = this.ibkrService.getPositions();
+        const positions = this.ibkrService.getPositionsForAPI();
         this.wsService.sendPositionsResponse(clientId, positions);
       } catch (error) {
         logError(error as Error, { context: 'ws.getPositions', clientId });
@@ -480,7 +692,7 @@ class EdgerunnerIBKRProxy {
 
     this.wsService.on('getAccountSummary', (clientId) => {
       try {
-        const accountSummary = this.ibkrService.getAccountSummary();
+        const accountSummary = this.ibkrService.getAccountSummaryForAPI();
         if (accountSummary) {
           this.wsService.sendAccountSummaryResponse(clientId, accountSummary);
         }
@@ -500,15 +712,8 @@ class EdgerunnerIBKRProxy {
   }
 
   private setupErrorHandling(): void {
-    // Express error handler
-    this.app.use((error: any, req: any, res: any, next: any) => {
-      logError(error, { context: 'express.errorHandler', path: req.path });
-      
-      res.status(500).json({
-        success: false,
-        message: config.nodeEnv === 'production' ? 'Internal server error' : error.message
-      });
-    });
+    // Express error handler - use structured error handling
+    this.app.use(ErrorHandler.middleware());
 
     // Unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
@@ -535,6 +740,11 @@ class EdgerunnerIBKRProxy {
 
   public async start(): Promise<void> {
     try {
+      // Initialize Authentication Service
+      await AuthService.initialize();
+      AuthService.startTokenCleanup();
+      logger.info('Authentication service initialized');
+
       // Initialize WebSocket service
       this.wsService.initialize(this.server);
 
@@ -545,6 +755,7 @@ class EdgerunnerIBKRProxy {
         logger.info(`🔌 WebSocket Server: ws://${config.host}:${config.port}/ws`);
         logger.info(`🌍 Environment: ${config.nodeEnv}`);
         logger.info(`📊 CORS Origin: ${config.cors.origin}`);
+        logger.info(`🔐 Default admin: admin@edgerunner.com / admin123`);
       });
 
     } catch (error) {

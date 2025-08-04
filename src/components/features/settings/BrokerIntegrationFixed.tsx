@@ -1,410 +1,328 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
-import { Label } from "../../../../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
-import { Switch } from "../../../../components/ui/switch";
 import { Badge } from "../../../../components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../../../components/ui/collapsible";
 import { Alert, AlertDescription } from "../../../../components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
+import { Label } from "../../../../components/ui/label";
 import { 
-  Link,
-  ChevronDown,
-  ChevronRight,
   CheckCircle,
   XCircle,
   AlertCircle,
-  Eye,
-  EyeOff,
-  TestTube,
-  Settings,
-  Plus,
+  Wifi,
+  WifiOff,
   Info,
   ExternalLink,
-  Wifi,
-  WifiOff
+  Loader2
 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../../components/ui/tooltip";
-import { useIBKRConnectionFixed } from "../../../store/ibkrStoreFixed";
-import { ConnectionStatusFixed } from "../../ibkr/ConnectionStatusFixed";
-
-interface BrokerConfig {
-  id: string;
-  name: string;
-  status: "connected" | "disconnected" | "coming_soon" | "planned";
-  isDefault: boolean;
-  config: {
-    apiKey?: string;
-    secretKey?: string;
-    isPaper?: boolean;
-    username?: string;
-    port?: string;
-    enabled?: boolean;
-  };
-}
+import { usePersistentConnection } from "../../../hooks/usePersistentConnection";
+import { Switch } from "../../../../components/ui/switch";
 
 export function BrokerIntegrationFixed() {
-  // Use the fixed IBKR store
-  const { isConnected, connectionStatus, disconnect, connect } = useIBKRConnectionFixed();
+  // Use persistent connection hook
+  const {
+    isConnected: ibkrConnected,
+    tradingMode,
+    isReconnecting,
+    connectionError,
+    sessionHealth,
+    autoReconnectEnabled,
+    connect,
+    disconnect,
+    toggleAutoReconnect,
+    clearSession,
+    setTradingMode
+  } = usePersistentConnection();
   
-  const [defaultBroker, setDefaultBroker] = useState("alpaca");
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [showSecretKey, setShowSecretKey] = useState(false);
-  const [expandedBrokers, setExpandedBrokers] = useState<Set<string>>(new Set(["alpaca", "interactive_brokers"]));
-  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
-  
-  // Memoize the IBKR status calculation to prevent unnecessary re-renders
-  const ibkrStatus = useMemo(() => {
-    if (isConnected) return "connected";
-    if (connectionStatus === "connecting") return "connecting";
-    if (connectionStatus === "error") return "disconnected";
-    return "disconnected";
-  }, [isConnected, connectionStatus]);
-  
-  const [brokers, setBrokers] = useState<BrokerConfig[]>([
-    {
-      id: "alpaca",
-      name: "Alpaca",
-      status: "connected",
-      isDefault: true,
-      config: {
-        apiKey: "PKTEST1A2B3C4D5E6F7G8H9I0J",
-        secretKey: "sk_test_••••••••••••••••••••••••••••••••",
-        isPaper: true
-      }
-    },
-    {
-      id: "interactive_brokers",
-      name: "Interactive Brokers",
-      status: ibkrStatus,
-      isDefault: false,
-      config: {
-        username: "",
-        port: "7497",
-        enabled: isConnected
-      }
-    },
-    {
-      id: "td_ameritrade",
-      name: "TD Ameritrade",
-      status: "planned",
-      isDefault: false,
-      config: {}
-    },
-    {
-      id: "custom",
-      name: "Custom Broker",
-      status: "planned",
-      isDefault: false,
-      config: {}
-    }
-  ]);
-
-  const updateBrokerConfig = useCallback((brokerId: string, field: string, value: string | boolean) => {
-    setBrokers(prevBrokers => prevBrokers.map(broker => 
-      broker.id === brokerId 
-        ? { ...broker, config: { ...broker.config, [field]: value } }
-        : broker
-    ));
-  }, []);
-
-  const toggleBrokerExpansion = useCallback((brokerId: string) => {
-    setExpandedBrokers(prev => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(brokerId)) {
-        newExpanded.delete(brokerId);
-      } else {
-        newExpanded.add(brokerId);
-      }
-      return newExpanded;
-    });
-  }, []);
-
-  const handleSetDefault = useCallback((brokerId: string) => {
-    setDefaultBroker(brokerId);
-    setBrokers(prevBrokers => prevBrokers.map(broker => ({
-      ...broker,
-      isDefault: broker.id === brokerId
-    })));
-  }, []);
-
   const handleIBKRConnect = useCallback(async () => {
-    try {
-      await connect({
-        username: "testuser",
-        password: "testpass"
-      });
-    } catch (error) {
-      console.error('Connection failed:', error);
-    }
+    await connect({ rememberConnection: true });
   }, [connect]);
 
-  const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case "connected":
-        return (
-          <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-800">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Connected
-          </Badge>
-        );
-      case "connecting":
-        return (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800">
-            <Settings className="h-3 w-3 mr-1 animate-spin" />
-            Connecting...
-          </Badge>
-        );
-      case "disconnected":
-        return (
-          <Badge variant="destructive">
-            <XCircle className="h-3 w-3 mr-1" />
-            Disconnected
-          </Badge>
-        );
-      case "coming_soon":
-        return (
-          <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800">
-            <Settings className="h-3 w-3 mr-1" />
-            Coming Soon
-          </Badge>
-        );
-      case "planned":
-        return (
-          <Badge variant="outline" className="text-muted-foreground">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Planned
-          </Badge>
-        );
-      default:
-        return null;
+  const handleIBKRDisconnect = useCallback(() => {
+    disconnect();
+  }, [disconnect]);
+
+  const getStatusBadge = (connected: boolean, reconnecting: boolean) => {
+    if (reconnecting) {
+      return (
+        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          {connected ? 'Reconnecting...' : 'Connecting...'}
+        </Badge>
+      );
     }
-  }, []);
+    
+    if (connected) {
+      return (
+        <Badge className="bg-green-100 text-green-700 border-green-200">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Connected
+          {sessionHealth.hasValidSession && (
+            <span className="ml-1 text-xs opacity-75">
+              (Persistent)
+            </span>
+          )}
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="destructive">
+        <XCircle className="h-3 w-3 mr-1" />
+        Disconnected
+      </Badge>
+    );
+  };
 
-  const getBrokerIcon = useCallback((brokerId: string) => {
-    const icons: Record<string, string> = {
-      alpaca: "🦙",
-      interactive_brokers: "🔷",
-      td_ameritrade: "💼",
-      custom: "⚙️"
-    };
-    return icons[brokerId] || "🔗";
-  }, []);
-
-  const getConnectedBrokers = useCallback(() => {
-    return brokers.filter(broker => broker.status === "connected");
-  }, [brokers]);
-
-  const connectedBrokers = getConnectedBrokers();
+  const connectedCount = ibkrConnected ? 2 : 1; // Alpaca is always connected
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-medium">Broker Integration (Fixed)</h2>
-            <p className="text-sm text-muted-foreground">
-              Connect and manage your brokerage accounts for automated trading
-            </p>
-          </div>
-          
-          {/* Global Status */}
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <div className="text-sm font-medium">{connectedBrokers.length} Connected</div>
-              <div className="text-xs text-muted-foreground">
-                {connectedBrokers.length > 0 ? "Ready for trading" : "No brokers connected"}
-              </div>
-            </div>
-            <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-medium">Broker Integration</h2>
+          <p className="text-sm text-muted-foreground">
+            Connect and manage your brokerage accounts
+          </p>
         </div>
-
-        {/* Default Broker Selector */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Default Broker for All Strategies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Label>Choose which broker to use by default for new strategies</Label>
-              <Select value={defaultBroker} onValueChange={setDefaultBroker}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {brokers.map(broker => (
-                    <SelectItem 
-                      key={broker.id} 
-                      value={broker.id}
-                      disabled={broker.status !== "connected"}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{getBrokerIcon(broker.id)}</span>
-                        <span>{broker.name}</span>
-                        {broker.status === "connected" && <span className="text-xs text-green-600">(Connected)</span>}
-                        {broker.status === "coming_soon" && <span className="text-xs text-blue-600">(Coming Soon)</span>}
-                        {broker.status === "planned" && <span className="text-xs text-muted-foreground">(Planned)</span>}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                You can override this setting for individual strategies
-              </p>
+        
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <div className="text-sm font-medium">
+              {connectedCount} Connected
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Broker Configuration Cards */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Broker Configurations</h3>
-          
-          {brokers.map(broker => (
-            <Card key={broker.id} className="overflow-hidden">
-              <Collapsible 
-                open={expandedBrokers.has(broker.id)} 
-                onOpenChange={() => toggleBrokerExpansion(broker.id)}
-              >
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="text-2xl">{getBrokerIcon(broker.id)}</div>
-                        <div>
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            {broker.name}
-                            {broker.isDefault && (
-                              <Badge variant="outline" className="text-xs">Default</Badge>
-                            )}
-                          </CardTitle>
-                          <div className="flex items-center gap-2 mt-1">
-                            {getStatusBadge(broker.status)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {broker.status === "connected" && !broker.isDefault && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetDefault(broker.id);
-                            }}
-                          >
-                            Set as Default
-                          </Button>
-                        )}
-                        {expandedBrokers.has(broker.id) ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
-                    {/* Interactive Brokers Configuration */}
-                    {broker.id === "interactive_brokers" && (
-                      <div className="space-y-6">
-                        {/* Fixed Connection Status Component */}
-                        <ConnectionStatusFixed showDetails={true} />
-
-                        {/* Connection Actions */}
-                        <div className="flex items-center gap-3">
-                          {!isConnected ? (
-                            <Button 
-                              className="bg-blue-600 hover:bg-blue-700"
-                              onClick={handleIBKRConnect}
-                              disabled={connectionStatus === 'connecting'}
-                            >
-                              <Wifi className="h-4 w-4 mr-2" />
-                              {connectionStatus === 'connecting' ? 'Connecting...' : 'Connect to IBKR'}
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="destructive" 
-                              onClick={() => disconnect()}
-                            >
-                              <WifiOff className="h-4 w-4 mr-2" />
-                              Disconnect
-                            </Button>
-                          )}
-                          
-                          <Button variant="outline">
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            TWS/Gateway Setup
-                          </Button>
-                        </div>
-
-                        {/* Setup Instructions */}
-                        <Alert>
-                          <Info className="h-4 w-4" />
-                          <AlertDescription>
-                            <div className="space-y-2">
-                              <div className="font-medium">Before connecting to IBKR:</div>
-                              <ul className="list-disc list-inside space-y-1 text-sm">
-                                <li>Install and run TWS (Trader Workstation) or IB Gateway</li>
-                                <li>Enable API connections in TWS Global Configuration</li>
-                                <li>Set socket port to 7497 (TWS) or 4001 (Gateway)</li>
-                                <li>Add 127.0.0.1 to trusted IPs if using localhost</li>
-                              </ul>
-                            </div>
-                          </AlertDescription>
-                        </Alert>
-
-                        {/* Live vs Paper Trading Warning */}
-                        {isConnected && (
-                          <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
-                            <AlertCircle className="h-4 w-4 text-yellow-600" />
-                            <AlertDescription className="text-yellow-800 dark:text-yellow-400">
-                              <div className="font-medium">Trading Mode Warning</div>
-                              <div className="text-sm mt-1">
-                                Always verify you're connected to the correct account (Paper vs Live) before executing any trades.
-                                Paper trading is recommended for testing strategies.
-                              </div>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Other broker configurations would go here */}
-                    {broker.id === "alpaca" && (
-                      <div className="p-4 text-center text-muted-foreground">
-                        Alpaca configuration (existing implementation)
-                      </div>
-                    )}
-
-                    {/* Planned Brokers */}
-                    {(broker.id === "td_ameritrade" || broker.id === "custom") && (
-                      <div className="space-y-4">
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            {broker.name} integration is planned for a future release. 
-                            {broker.id === "custom" && " This will allow you to connect any broker with API support."}
-                          </AlertDescription>
-                        </Alert>
-                        <Button variant="outline" disabled>
-                          Planned Feature
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          ))}
+            <div className="text-xs text-muted-foreground">
+              {connectedCount > 1 ? "Ready for trading" : "Alpaca connected"}
+            </div>
+          </div>
+          <div className={`h-3 w-3 rounded-full ${connectedCount > 1 ? 'bg-green-500' : 'bg-yellow-500'}`} />
         </div>
       </div>
-    </TooltipProvider>
+
+      {/* Interactive Brokers Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">🔷</div>
+              <div>
+                <CardTitle className="text-lg">Interactive Brokers</CardTitle>
+                <div className="flex items-center gap-2 mt-1">
+                  {getStatusBadge(ibkrConnected, isReconnecting)}
+                  {tradingMode && (
+                    <Badge 
+                      variant={tradingMode === 'live' ? 'destructive' : 'secondary'}
+                      className={tradingMode === 'live' 
+                        ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200' 
+                        : 'bg-blue-100 text-blue-800 border-blue-300'
+                      }
+                    >
+                      {tradingMode === 'live' ? '🔴 LIVE' : '📄 PAPER'}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Connection Actions */}
+          <div className="flex items-center gap-3">
+            {!ibkrConnected ? (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleIBKRConnect}
+                disabled={isReconnecting}
+              >
+                <Wifi className="h-4 w-4 mr-2" />
+                {isReconnecting ? 'Connecting...' : 'Connect to IBKR'}
+              </Button>
+            ) : (
+              <Button 
+                variant="destructive" 
+                onClick={handleIBKRDisconnect}
+                disabled={isReconnecting}
+              >
+                <WifiOff className="h-4 w-4 mr-2" />
+                Disconnect
+              </Button>
+            )}
+            
+            <Button variant="outline">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              TWS/Gateway Setup
+            </Button>
+          </div>
+
+          {/* Connection Error */}
+          {connectionError && (
+            <Alert variant="destructive">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="font-medium">Connection Failed</div>
+                <div className="text-sm mt-1">{connectionError}</div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Persistence Settings */}
+          <div className="p-4 border rounded-lg bg-muted/30">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Auto-Reconnect</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically reconnect when you refresh the page
+                  </p>
+                </div>
+                <Switch
+                  checked={autoReconnectEnabled}
+                  onCheckedChange={toggleAutoReconnect}
+                />
+              </div>
+
+              {sessionHealth.hasValidSession && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>Session ID: {sessionHealth.sessionInfo?.sessionId?.slice(-8)}</div>
+                  <div>Session Age: {Math.floor(sessionHealth.sessionAge / 1000 / 60)} minutes</div>
+                  {sessionHealth.shouldAutoReconnect && (
+                    <div className="text-green-600">✓ Will auto-reconnect on refresh</div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSession}
+                  className="text-xs"
+                >
+                  Clear Session Data
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Setup Instructions */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <div className="space-y-2">
+                <div className="font-medium">Before connecting to IBKR:</div>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Install and run TWS (Trader Workstation) or IB Gateway</li>
+                  <li>Enable API connections in TWS Global Configuration</li>
+                  <li>Set socket port to 7497 (Paper) or 7496 (Live)</li>
+                  <li>Add 127.0.0.1 to trusted IPs if using localhost</li>
+                  <li>Make sure no other applications are using Client ID 1</li>
+                </ul>
+                <div className="text-xs mt-2 p-2 bg-blue-50 rounded border-blue-200">
+                  💡 <strong>Persistent Connection:</strong> Once connected, your session will be saved and automatically restored when you refresh the page!
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          {/* Trading Mode Detection */}
+          {ibkrConnected && tradingMode && (
+            <div className="space-y-4">
+              <Alert className={
+                tradingMode === 'live' 
+                  ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                  : "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
+              }>
+                <AlertCircle className={`h-4 w-4 ${tradingMode === 'live' ? 'text-red-600' : 'text-blue-600'}`} />
+                <AlertDescription className={tradingMode === 'live' ? 'text-red-800 dark:text-red-400' : 'text-blue-800 dark:text-blue-400'}>
+                  <div className="font-medium">
+                    {tradingMode === 'live' ? '🔴 LIVE TRADING MODE DETECTED' : '📄 Paper Trading Mode Detected'}
+                  </div>
+                  <div className="text-sm mt-1">
+                    {tradingMode === 'live' 
+                      ? 'You are connected to a LIVE account. Real money transactions are possible!'
+                      : 'You are connected to a Paper Trading account. No real money at risk.'
+                    }
+                  </div>
+                </AlertDescription>
+              </Alert>
+
+              {/* Manual Override Section */}
+              <div className="p-4 border rounded-lg bg-muted/50">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Manual Trading Mode Override</Label>
+                  <Select value={tradingMode} onValueChange={(value: 'paper' | 'live') => setTradingMode(value)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paper">📄 Paper Trading</SelectItem>
+                      <SelectItem value="live">🔴 Live Trading</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Override detected mode if incorrect. Always verify your actual TWS/Gateway connection.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Connection Success Message */}
+          {ibkrConnected && (
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800 dark:text-green-400">
+                <div className="font-medium">Successfully Connected!</div>
+                <div className="text-sm mt-1">
+                  Your IBKR connection is active and ready for trading.
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* General Safety Warning */}
+          {ibkrConnected && tradingMode === 'live' && (
+            <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-400">
+                <div className="font-medium">⚠️ Live Trading Safety Checklist</div>
+                <div className="text-sm mt-2 space-y-1">
+                  <div>• Double-check account balance and available funds</div>
+                  <div>• Verify position sizing and risk management rules</div>
+                  <div>• Test strategies in Paper Trading first</div>
+                  <div>• Set appropriate stop-losses and limits</div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Alpaca Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">🦙</div>
+            <div>
+              <CardTitle className="text-lg">Alpaca</CardTitle>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge className="bg-green-100 text-green-700 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Connected
+                </Badge>
+                <Badge variant="outline" className="text-xs">Default</Badge>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Alpaca is already configured and ready for trading.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
