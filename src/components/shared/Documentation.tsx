@@ -659,3 +659,5 @@ export function Documentation() {
     </TooltipProvider>
   );
 }
+
+export default Documentation;

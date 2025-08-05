@@ -468,3 +468,5 @@ export function TradeJournalPage() {
     </div>
   );
 }
+
+export default TradeJournalPage;

@@ -1,16 +1,23 @@
+import React from "react";
 import { Sidebar } from "./src/components/layout/Sidebar";
-import { Dashboard } from "./src/components/features/dashboard/Dashboard";
-import { TradeJournalPage } from "./src/components/features/journal/TradeJournalPage";
-import { StrategyBuilder } from "./src/components/features/strategy/StrategyBuilder";
-import { Settings } from "./src/components/features/settings/Settings";
-import { Documentation } from "./src/components/shared/Documentation";
 import { TopBar } from "./src/components/layout/TopBar";
 import { ThemeProvider } from "./src/components/shared/ThemeProvider";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { Button } from "./components/ui/button";
 import { Download, BarChart3 } from "lucide-react";
 import { useUIStore } from "./src/store/uiStore";
+import { KeyboardShortcuts } from "./src/lib/accessibility";
 import type { TabId } from "./src/types";
+
+// Lazy-loaded components for performance
+import {
+  LazyDashboard,
+  LazyStrategyBuilder,
+  LazyTradeJournalPage,
+  LazySettings,
+  LazyDocumentation,
+  preloadCriticalComponents
+} from "./src/components/lazy";
 
 export default function App() {
   // Use Zustand store instead of local state - preserves exact same behavior
@@ -23,22 +30,27 @@ export default function App() {
     getPageSubtitle 
   } = useUIStore();
 
+  // Preload critical components on mount and initialize trading shortcuts
+  React.useEffect(() => {
+    preloadCriticalComponents();
+    
+    // Initialize trading-specific keyboard shortcuts with UI store
+    KeyboardShortcuts.initializeTradingShortcuts({
+      setActiveTab,
+      toggleSidebar: () => setSidebarCollapsed(!sidebarCollapsed)
+    });
+  }, [setActiveTab, setSidebarCollapsed, sidebarCollapsed]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return (
-          <ErrorBoundary>
-            <Dashboard />
-          </ErrorBoundary>
-        );
+        return <LazyDashboard />;
       case "strategies":
         return (
-          <ErrorBoundary>
-            <StrategyBuilder 
-              sidebarCollapsed={sidebarCollapsed}
-              onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-            />
-          </ErrorBoundary>
+          <LazyStrategyBuilder 
+            sidebarCollapsed={sidebarCollapsed}
+            onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         );
       case "backtest":
         return (
@@ -47,17 +59,9 @@ export default function App() {
           </div>
         );
       case "journal":
-        return (
-          <ErrorBoundary>
-            <TradeJournalPage />
-          </ErrorBoundary>
-        );
+        return <LazyTradeJournalPage />;
       case "settings":
-        return (
-          <ErrorBoundary>
-            <Settings />
-          </ErrorBoundary>
-        );
+        return <LazySettings />;
       case "notifications":
         return (
           <div className="flex-1 p-6">
@@ -65,52 +69,50 @@ export default function App() {
           </div>
         );
       case "docs":
-        return (
-          <ErrorBoundary>
-            <Documentation />
-          </ErrorBoundary>
-        );
+        return <LazyDocumentation />;
       default:
-        return (
-          <ErrorBoundary>
-            <Dashboard />
-          </ErrorBoundary>
-        );
+        return <LazyDashboard />;
     }
   };
 
   return (
     <ThemeProvider>
       <div className="h-screen flex bg-background">
-        <Sidebar 
-          activeTab={activeTab as TabId} 
-          onTabChange={(tab) => setActiveTab(tab as TabId)}
-          isCollapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
+        <nav id="navigation" role="navigation" aria-label="Main navigation">
+          <Sidebar 
+            activeTab={activeTab as TabId} 
+            onTabChange={(tab) => setActiveTab(tab as TabId)}
+            isCollapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
+        </nav>
         <div className="flex-1 flex flex-col">
           {activeTab !== "strategies" && (
-            <TopBar 
-              title={getPageTitle()} 
-              subtitle={getPageSubtitle()}
-              sidebarCollapsed={sidebarCollapsed}
-              onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-            >
-              {activeTab === "journal" && (
-                <>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export CSV
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Analytics
-                  </Button>
-                </>
-              )}
-            </TopBar>
+            <header role="banner">
+              <TopBar 
+                title={getPageTitle()} 
+                subtitle={getPageSubtitle()}
+                sidebarCollapsed={sidebarCollapsed}
+                onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+              >
+                {activeTab === "journal" && (
+                  <>
+                    <Button variant="outline" size="sm" aria-label="Export trade journal to CSV">
+                      <Download className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Export CSV
+                    </Button>
+                    <Button variant="outline" size="sm" aria-label="View trade analytics">
+                      <BarChart3 className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Analytics
+                    </Button>
+                  </>
+                )}
+              </TopBar>
+            </header>
           )}
-          {renderContent()}
+          <main id="main-content" role="main" className="flex-1">
+            {renderContent()}
+          </main>
         </div>
       </div>
     </ThemeProvider>
