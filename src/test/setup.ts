@@ -24,19 +24,23 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Mock local storage
-const localStorageMock = {
+const localStorageMock: Storage = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
+  length: 0,
+  key: vi.fn(() => null),
 }
 global.localStorage = localStorageMock
 
 // Mock session storage
-const sessionStorageMock = {
+const sessionStorageMock: Storage = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
+  length: 0,
+  key: vi.fn(() => null),
 }
 global.sessionStorage = sessionStorageMock

@@ -11,11 +11,11 @@ export function useFormValidation<T extends z.ZodType<any, any>>(
   schema: T,
   options?: Omit<UseFormProps<z.infer<T>>, 'resolver'>
 ): UseFormReturn<z.infer<T>> {
-  return useForm<z.infer<T>>({
+  return useForm({
     resolver: zodResolver(schema),
     mode: 'onChange', // Validate on change for real-time feedback
     ...options,
-  })
+  } as UseFormProps<z.infer<T>>)
 }
 
 /**

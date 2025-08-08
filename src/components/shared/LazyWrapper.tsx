@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, ComponentType } from 'react'
 import { ErrorBoundary } from '../ErrorBoundary'
-import { Skeleton } from '../../../components/ui/skeleton'
-import { Card, CardContent } from '../../../components/ui/card'
+import { Skeleton } from '../ui/skeleton'
+import { Card, CardContent } from '../ui/card'
 
 // Loading skeleton for different component types
 const LoadingSkeletons = {

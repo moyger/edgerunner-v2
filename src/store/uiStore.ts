@@ -52,6 +52,7 @@ export const useUIStore = create<UIStore>()(
             case 'strategies': return 'Strategies';
             case 'backtest': return 'Backtest';
             case 'journal': return 'Trade Journal';
+            case 'api-testing': return 'API Testing';
             case 'settings': return 'Settings';
             case 'notifications': return 'Notifications';
             case 'docs': return 'Documentation';
@@ -66,6 +67,7 @@ export const useUIStore = create<UIStore>()(
             case 'strategies': return 'Create and manage your algorithmic trading strategies';
             case 'backtest': return 'Test your strategies against historical market data';
             case 'journal': return 'Complete trading history and performance analytics';
+            case 'api-testing': return 'Validate broker connections and API integrity before integration';
             case 'settings': return 'Configure your trading environment and preferences';
             case 'notifications': return 'Stay informed with real-time alerts and updates';
             case 'docs': return 'Learn how to maximize your trading performance';

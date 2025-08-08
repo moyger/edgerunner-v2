@@ -12,7 +12,7 @@ export const strategyConfigSchema = z.object({
     .optional(),
   
   type: z.enum(['long', 'short', 'hedge', 'arbitrage'], {
-    errorMap: () => ({ message: 'Invalid strategy type' })
+    message: 'Invalid strategy type'
   }),
   
   // Universe/Symbol validation
@@ -63,7 +63,7 @@ export const tradeEntrySchema = z.object({
     .regex(/^[A-Z0-9]+$/, 'Symbol must contain only uppercase letters and numbers'),
   
   side: z.enum(['buy', 'sell'], {
-    errorMap: () => ({ message: 'Side must be either buy or sell' })
+    message: 'Side must be either buy or sell'
   }),
   
   quantity: z.number()
@@ -75,11 +75,11 @@ export const tradeEntrySchema = z.object({
     .max(1000000, 'Price cannot exceed 1,000,000'),
   
   orderType: z.enum(['market', 'limit', 'stop', 'stop_limit'], {
-    errorMap: () => ({ message: 'Invalid order type' })
+    message: 'Invalid order type'
   }),
   
   timeInForce: z.enum(['day', 'gtc', 'ioc', 'fok'], {
-    errorMap: () => ({ message: 'Invalid time in force' })
+    message: 'Invalid time in force'
   }).optional(),
   
   notes: z.string()
@@ -94,11 +94,11 @@ export const portfolioSettingsSchema = z.object({
     .max(100000000, 'Initial capital cannot exceed $100,000,000'),
   
   baseCurrency: z.enum(['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'], {
-    errorMap: () => ({ message: 'Unsupported base currency' })
+    message: 'Unsupported base currency'
   }),
   
   riskTolerance: z.enum(['conservative', 'moderate', 'aggressive'], {
-    errorMap: () => ({ message: 'Invalid risk tolerance level' })
+    message: 'Invalid risk tolerance level'
   }),
   
   maxConcurrentPositions: z.number()
@@ -109,7 +109,7 @@ export const portfolioSettingsSchema = z.object({
 // User Settings Validation
 export const userSettingsSchema = z.object({
   theme: z.enum(['light', 'dark', 'system'], {
-    errorMap: () => ({ message: 'Invalid theme selection' })
+    message: 'Invalid theme selection'
   }),
   
   notifications: z.object({
@@ -122,13 +122,13 @@ export const userSettingsSchema = z.object({
   
   display: z.object({
     currency: z.enum(['USD', 'EUR', 'GBP'], {
-      errorMap: () => ({ message: 'Unsupported display currency' })
+      message: 'Unsupported display currency'
     }),
     timeZone: z.string()
       .min(1, 'Time zone is required')
       .regex(/^[A-Za-z_]+\/[A-Za-z_]+$/, 'Invalid time zone format'),
     chartTheme: z.enum(['light', 'dark'], {
-      errorMap: () => ({ message: 'Invalid chart theme' })
+      message: 'Invalid chart theme'
     }),
     compactMode: z.boolean(),
   }),

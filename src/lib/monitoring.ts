@@ -196,12 +196,18 @@ export class TradingErrorLogger {
   ) {
     if (!this.isOnline) return
     
-    Sentry.metrics.timing('trading.operation.duration', duration, {
-      unit: 'millisecond',
-      tags: {
+    // Add performance metrics as breadcrumb since Sentry.metrics is not available
+    Sentry.addBreadcrumb({
+      message: `Performance: ${operation}`,
+      category: 'performance',
+      level: 'info',
+      data: {
+        duration,
+        unit: 'millisecond',
         operation,
         ...context,
       },
+      timestamp: Date.now() / 1000,
     })
   }
   

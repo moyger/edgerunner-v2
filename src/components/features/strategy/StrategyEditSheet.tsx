@@ -80,7 +80,7 @@ export function StrategyEditSheet({ strategy, open, onOpenChange, onSave }: Stra
                       id={key}
                       type="number"
                       step="0.1"
-                      value={value}
+                      value={String(value)}
                       onChange={(e) => handleInputChange(key, e.target.value)}
                       className="w-full"
                     />

@@ -1,7 +1,7 @@
 // Core Trading Platform Types
 // These types preserve all existing component interfaces while adding structure
 
-export type TabId = 'dashboard' | 'strategies' | 'backtest' | 'journal' | 'settings' | 'notifications' | 'docs';
+export type TabId = 'dashboard' | 'strategies' | 'backtest' | 'journal' | 'settings' | 'notifications' | 'docs' | 'api-testing';
 
 export interface Strategy {
   id: string;
@@ -156,6 +156,50 @@ export interface RealTimeUpdate {
   type: 'position_update' | 'strategy_signal' | 'market_data' | 'trade_execution';
   payload: any;
   timestamp: string;
+}
+
+// API Integration Types
+export type BrokerId = 'bybit' | 'ibkr' | 'mt5' | 'alpaca';
+
+export interface BrokerCredentials {
+  apiKey?: string;
+  secretKey?: string;
+  username?: string;
+  password?: string;
+  testnet?: boolean;
+  [key: string]: any;
+}
+
+export interface MarketData {
+  symbol: string;
+  bid: number;
+  ask: number;
+  last: number;
+  high: number;
+  low: number;
+  volume: number;
+  timestamp: number;
+}
+
+export interface PriceUpdate {
+  symbol: string;
+  price: number;
+  timestamp: number;
+}
+
+export interface OrderBookUpdate {
+  symbol: string;
+  bids: Array<[number, number]>;
+  asks: Array<[number, number]>;
+  timestamp: number;
+}
+
+export interface TradeUpdate {
+  symbol: string;
+  price: number;
+  quantity: number;
+  side: 'buy' | 'sell';
+  timestamp: number;
 }
 
 // Error Types

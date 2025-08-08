@@ -74,8 +74,8 @@ export function StrategyConfigDialog({ strategy, open, onOpenChange }: StrategyC
                       {typeof value === 'number' 
                         ? key.includes('Percent') || key.includes('Loss') || key.includes('Profit') 
                           ? `${value}%` 
-                          : value
-                        : value
+                          : String(value)
+                        : String(value)
                       }
                     </span>
                   </div>

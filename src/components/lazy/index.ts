@@ -31,30 +31,35 @@ export const LazyDocumentation = createLazyComponent(
   'default'
 )
 
+export const LazyApiTestingPage = createLazyComponent(
+  () => import('../features/api-testing/ApiTestingPage'),
+  'default'
+)
+
 // Lazy load strategy sub-components for additional granular loading
 export const LazyStrategyConfigDialog = createLazyComponent(
-  () => import('../features/strategy/StrategyConfigDialog'),
+  () => import('../features/strategy/StrategyConfigDialog').then(m => ({ default: m.StrategyConfigDialog })),
   'default'
 )
 
 export const LazyStrategyEditSheet = createLazyComponent(
-  () => import('../features/strategy/StrategyEditSheet'),
+  () => import('../features/strategy/StrategyEditSheet').then(m => ({ default: m.StrategyEditSheet })),
   'default'
 )
 
 export const LazyStrategyComparisonDialog = createLazyComponent(
-  () => import('../features/strategy/StrategyComparisonDialog'),
+  () => import('../features/strategy/StrategyComparisonDialog').then(m => ({ default: m.StrategyComparisonDialog })),
   'default'
 )
 
 // Lazy load heavy UI components
 export const LazyEquityChart = createLazyComponent(
-  () => import('../features/dashboard/EquityChart'),
+  () => import('../features/dashboard/EquityChart').then(m => ({ default: m.EquityChart })),
   'default'
 )
 
 export const LazyTradeJournal = createLazyComponent(
-  () => import('../features/journal/TradeJournal'),
+  () => import('../features/journal/TradeJournal').then(m => ({ default: m.TradeJournal })),
   'default'
 )
 

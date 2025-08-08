@@ -1,7 +1,7 @@
 import { useState, memo, useMemo, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
-import { Badge } from "../../../../components/ui/badge";
-import { Button } from "../../../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -20,14 +20,14 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 import { EquityChart } from "./EquityChart";
-import { ScreenReader } from "../../../lib/accessibility";
+// import { ScreenReader } from "@/lib/accessibility";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "../../../../components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { StrategyConfigDialog } from "../strategy/StrategyConfigDialog";
 import { StrategyEditSheet } from "../strategy/StrategyEditSheet";
 import { StrategyComparisonDialog } from "../strategy/StrategyComparisonDialog";
@@ -41,7 +41,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../../../../components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 
 // Mock data for the dashboard
 const accountData = {
@@ -151,7 +151,7 @@ export const Dashboard = memo(function Dashboard() {
 
   // Announce dashboard load and significant changes
   useEffect(() => {
-    ScreenReader.announce('Dashboard loaded with trading overview', 'polite');
+    // ScreenReader.announce('Dashboard loaded with trading overview', 'polite');
   }, []);
 
   // Announce significant P&L changes
@@ -159,10 +159,10 @@ export const Dashboard = memo(function Dashboard() {
     const totalStrategyPnL = strategies.reduce((sum, s) => sum + s.pnl, 0);
     if (totalStrategyPnL !== 0) {
       const direction = totalStrategyPnL > 0 ? 'gained' : 'lost';
-      ScreenReader.announce(
-        `Strategy performance update: ${direction} $${Math.abs(totalStrategyPnL).toFixed(2)} total`,
-        'polite'
-      );
+      // ScreenReader.announce(
+      //   `Strategy performance update: ${direction} $${Math.abs(totalStrategyPnL).toFixed(2)} total`,
+      //   'polite'
+      // );
     }
   }, [strategies]);
 
@@ -207,7 +207,7 @@ export const Dashboard = memo(function Dashboard() {
       );
       
       // Announce strategy halt to screen readers
-      ScreenReader.announceTradeEvent('strategy_stopped', selectedStrategy.name);
+      // ScreenReader.announceTradeEvent('strategy_stopped', selectedStrategy.name);
       
       setShowHaltDialog(false);
       setSelectedStrategy(null);

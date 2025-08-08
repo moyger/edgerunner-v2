@@ -2,12 +2,14 @@ import React from "react";
 import { Sidebar } from "./src/components/layout/Sidebar";
 import { TopBar } from "./src/components/layout/TopBar";
 import { ThemeProvider } from "./src/components/shared/ThemeProvider";
-import { ErrorBoundary } from "./src/components/ErrorBoundary";
-import { Button } from "./components/ui/button";
+import { Button } from "./src/components/ui/button";
 import { Download, BarChart3 } from "lucide-react";
 import { useUIStore } from "./src/store/uiStore";
 import { KeyboardShortcuts } from "./src/lib/accessibility";
+import { autoStartupService } from "./src/services/AutoStartupService";
+import { StartupProgress } from "./src/components/StartupProgress";
 import type { TabId } from "./src/types";
+import type { StartupProgress as StartupProgressType } from "./src/services/AutoStartupService";
 
 // Lazy-loaded components for performance
 import {
@@ -16,6 +18,7 @@ import {
   LazyTradeJournalPage,
   LazySettings,
   LazyDocumentation,
+  LazyApiTestingPage,
   preloadCriticalComponents
 } from "./src/components/lazy";
 
@@ -30,16 +33,68 @@ export default function App() {
     getPageSubtitle 
   } = useUIStore();
 
-  // Preload critical components on mount and initialize trading shortcuts
+  // Auto-startup state
+  const [startupProgress, setStartupProgress] = React.useState<StartupProgressType | null>(null);
+  const [startupCompleted, setStartupCompleted] = React.useState(false);
+
+  // Auto-startup initialization
   React.useEffect(() => {
-    preloadCriticalComponents();
+    let mounted = true;
+
+    const initializeApp = async () => {
+      // Set up progress monitoring
+      autoStartupService.onProgress((progress) => {
+        if (mounted) {
+          setStartupProgress(progress);
+        }
+      });
+
+      try {
+        // Start automatic initialization
+        const finalProgress = await autoStartupService.startAutoInitialization();
+        
+        if (mounted) {
+          setStartupProgress(finalProgress);
+          
+          // Mark as completed after a short delay
+          setTimeout(() => {
+            if (mounted) {
+              setStartupCompleted(true);
+            }
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('App initialization failed:', error);
+        if (mounted) {
+          // Still allow user to continue even if startup fails
+          setTimeout(() => {
+            if (mounted) {
+              setStartupCompleted(true);
+            }
+          }, 3000);
+        }
+      }
+    };
+
+    initializeApp();
     
-    // Initialize trading-specific keyboard shortcuts with UI store
-    KeyboardShortcuts.initializeTradingShortcuts({
-      setActiveTab,
-      toggleSidebar: () => setSidebarCollapsed(!sidebarCollapsed)
-    });
-  }, [setActiveTab, setSidebarCollapsed, sidebarCollapsed]);
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Preload critical components and initialize trading shortcuts after startup
+  React.useEffect(() => {
+    if (startupCompleted) {
+      preloadCriticalComponents();
+      
+      // Initialize trading-specific keyboard shortcuts with UI store
+      KeyboardShortcuts.initializeTradingShortcuts({
+        setActiveTab,
+        toggleSidebar: () => setSidebarCollapsed(!sidebarCollapsed)
+      });
+    }
+  }, [startupCompleted, setActiveTab, setSidebarCollapsed, sidebarCollapsed]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -70,10 +125,24 @@ export default function App() {
         );
       case "docs":
         return <LazyDocumentation />;
+      case "api-testing":
+        return <LazyApiTestingPage />;
       default:
         return <LazyDashboard />;
     }
   };
+
+  // Show startup progress if not completed
+  if (!startupCompleted && startupProgress) {
+    return (
+      <ThemeProvider>
+        <StartupProgress 
+          progress={startupProgress} 
+          onComplete={() => setStartupCompleted(true)}
+        />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider>

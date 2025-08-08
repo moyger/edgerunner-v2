@@ -8,11 +8,12 @@ import {
   FileText,
   Home,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  Zap
 } from "lucide-react";
-import { Button } from "../../../components/ui/button";
-import { cn } from "../../../components/ui/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
+import { Button } from "../ui/button";
+import { cn } from "../../lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 interface SidebarProps {
   activeTab: string;
@@ -26,6 +27,7 @@ const navigationItems = [
   { id: "strategies", label: "Strategies", icon: Brain },
   { id: "backtest", label: "Backtest", icon: TrendingUp },
   { id: "journal", label: "Trade Journal", icon: BookOpen },
+  { id: "api-testing", label: "API Testing", icon: Zap },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "docs", label: "About / Docs", icon: FileText },

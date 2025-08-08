@@ -2,197 +2,259 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## About This Project
+## Essential Commands
 
-Edgerunner v2 is a comprehensive algorithmic trading platform built with React and TypeScript. It provides real-time trading dashboard functionality, strategy building capabilities, backtesting, trade journaling, and portfolio management for quantitative traders.
+### Development
+```bash
+# Start full application (frontend + backend)
+npm run dev
 
-## Development Commands
+# Frontend only (if backend already running)
+npm run dev:frontend-only
 
-### Essential Commands
-- `npm run dev` - Start development server on port 3000 (auto-opens browser)
-- `npm run build` - Build for production (runs TypeScript compilation + Vite build)
-- `npm run lint` - Run ESLint for code quality checks
-- `npm run preview` - Preview production build locally
+# Backend only
+cd backend && python3 start.py
 
-### Testing & Development
-- `npm test` - Run test suite with Vitest
-- `npm run test:ui` - Run tests with Vitest UI interface
-- `npm run test:coverage` - Run tests with coverage reporting
-- Testing framework: Vitest + React Testing Library + jsdom
-- Test utilities available in `/src/test/test-utils.tsx` with theme provider wrapper
-- The development server uses Vite with React Fast Refresh for instant updates
-- TypeScript compilation happens in both development and build modes
+# Build production
+npm run build
+
+# Run tests
+npm test                    # Run all tests
+npm run test:ui            # Run tests with UI
+npm run test:coverage      # Generate coverage report
+npx vitest run path/to/test.ts  # Run single test file
+
+# Type checking
+npx tsc --noEmit
+
+# Linting (needs eslint.config.js migration from v9)
+npm run lint
+```
+
+### Backend Operations
+```bash
+# Start backend server
+cd backend && python3 start.py
+
+# Stop backend
+npm run backend:stop
+
+# Backend health check
+curl http://localhost:8000/health
+```
 
 ## Architecture Overview
 
-### Core Technology Stack
-- **Frontend Framework**: React 18.3+ with TypeScript 5.6+
-- **Build Tool**: Vite 6.0+ with React plugin
-- **State Management**: Redux for global state (UI and trading data)
-- **UI Framework**: Radix UI primitives with Tailwind CSS styling
-- **Charts/Visualization**: Recharts for financial data visualization
-- **Icons**: Lucide React
-- **Styling**: Tailwind CSS with CSS custom properties for theming
+### Full-Stack Auto-Startup System
+This is a **zero-configuration trading platform** that automatically:
+1. Starts the backend server if not running
+2. Discovers available brokers (IBKR, MT5, ByBit)
+3. Auto-connects to configured brokers
+4. Syncs market data
+5. Provides visual startup progress
 
-### Application Structure
+The auto-startup logic is in `src/services/AutoStartupService.ts` and `src/components/StartupProgress.tsx`.
 
-**High-Level Architecture:**
-- Single-page application with tab-based navigation
-- Global state management through Zustand stores
-- Feature-based component organization
-- Comprehensive TypeScript interfaces for trading domain objects
+### Frontend Architecture
 
-**Key Application Patterns:**
-1. **Feature-Based Organization**: Components are organized by business domain (dashboard, trading, strategy, journal, settings)
-2. **State Management**: Uses Redux with persistence for UI state and separate stores for trading data
-3. **Component Composition**: Extensive use of Radix UI primitives composed into custom components
-4. **Error Boundaries**: Comprehensive error handling wrapping each major feature
-5. **Theme System**: CSS custom properties with light/dark mode support
-
-### Directory Structure
-
-```
-src/
-├── components/
-│   ├── features/           # Business domain components
-│   │   ├── dashboard/      # Trading dashboard and portfolio overview
-│   │   ├── strategy/       # Strategy builder and management
-│   │   ├── journal/        # Trade journaling and analytics
-│   │   └── settings/       # Application configuration
-│   ├── layout/             # App shell components (Sidebar, TopBar)
-│   └── shared/             # Reusable components (ThemeProvider, etc.)
-├── store/                  # Redux state management
-├── types/                  # TypeScript type definitions
-├── services/               # API and external service integration
-├── hooks/                  # Custom React hooks
-└── utils/                  # Utility functions
+**State Management**: Zustand store in `src/store/uiStore.ts` manages global UI state. Access with:
+```typescript
+import { useUIStore } from '@/store/uiStore'
 ```
 
-### State Management Architecture
+**Component Organization**:
+- `src/components/features/` - Feature-specific components (dashboard, strategy, journal)
+- `src/components/ui/` - shadcn/ui component library (don't modify directly)
+- `src/components/shared/` - Reusable components
+- `src/components/lazy/` - Lazy-loaded component exports with loading skeletons
 
-**Redux Stores:**
-- `uiStore.ts` - UI state (active tab, sidebar state, theme) with persistence
-- `tradingStore.ts` - Trading data, strategies, and portfolio state
+**Service Layer** (`src/services/`):
+- `ApiIntegrationManager` - Orchestrates all API calls with correlation tracking
+- `WebSocketManager` - Real-time data with auto-reconnect
+- `BrokerService` - Unified interface for multiple brokers
+- `RateLimiter` - Broker-specific rate limiting
+- `MonitoringService` - Logging and performance tracking
 
-**State Patterns:**
-- Actions and reducers that preserve existing component behavior
-- Persistence for UI preferences using Redux Persist
-- Redux DevTools integration for debugging
-- Selectors and action creators for component compatibility
+**Key Patterns**:
+- All feature components are lazy-loaded through `LazyWrapper`
+- API calls go through `ApiIntegrationManager` for monitoring
+- Use correlation IDs for request tracking
+- Paper trading mode is default (check `config.features.liveTrading`)
 
-### Component Architecture
+### Backend Architecture
 
-**UI Component System:**
-- Comprehensive Radix UI component library in `/components/ui/`
-- Custom business components compose UI primitives
-- Consistent theming through CSS custom properties
-- Responsive design with Tailwind utilities
+**Structure**:
+```
+backend/src/
+├── routes/     # FastAPI endpoints
+├── services/   # Business logic
+├── adapters/   # Broker integrations
+└── models.py   # Pydantic models
+```
 
-**Key Component Patterns:**
-- Error boundaries wrap each feature
-- Feature components are self-contained with their own state
-- Layout components handle navigation and theming
-- Mock data is used throughout for development
+**Broker Adapters**: Located in `backend/src/adapters/`. Each broker (IBKR, MT5, ByBit) has its own adapter implementing a common interface.
 
-### Trading Domain Model
+**Health & Diagnostics**: The backend provides `/health` and `/diagnostics` endpoints for system monitoring.
 
-**Core Types:**
-- `Strategy` - Trading strategy configuration and performance
-- `Position` - Open trading positions with P&L tracking
-- `Trade` - Executed trade records
-- `Portfolio` - Account-level aggregations
-- Tab-based navigation system with `TabId` type
+### Type System
 
-**Features Currently Implemented:**
-- Real-time dashboard with equity curves and performance metrics
-- Strategy builder with entry/exit logic configuration
-- Trade journal with filtering and analytics
-- Settings management for notifications, security, and account preferences
-- Theme switching with persistence
+All TypeScript types are centralized in `src/types/index.ts`:
+- `Strategy`, `Position`, `Trade` - Trading entities
+- `BrokerCredentials` - Broker authentication
+- `WebSocketMessage` - Real-time message types
+- `ApiResponse` - Standardized API responses
 
-### File Import Patterns
+### Testing Strategy
 
-**Import Alias Configuration:**
-- `@/` - Root directory alias configured in vite.config.ts
-- Relative imports used throughout for better maintainability
-- UI components imported from `/components/ui/` directory
+**Setup**: Tests use Vitest with React Testing Library. Test utilities are in `src/test/`.
 
-**Component Export Patterns:**
-- Feature components export through index.ts barrel files
-- UI components are individual exports
-- Types are centralized in `/src/types/index.ts`
+**Mocked APIs**: The setup mocks ResizeObserver, matchMedia, and localStorage for component tests.
 
-## Development Guidelines
+**Running Tests**:
+```bash
+# Component test example
+npx vitest run src/components/__tests__/Button.test.tsx
 
-### Code Style & Patterns
-- Use TypeScript strict mode - all types should be properly defined
-- Follow the existing component composition patterns using Radix UI
-- Maintain the feature-based directory organization
-- Use Redux actions for state mutations, not direct state access
-- Implement error boundaries for new features
-- Follow the existing mock data patterns for development
+# Service test example  
+npx vitest run src/services/__tests__/ApiClient.test.ts
+```
 
-### Input Validation & Security
-- **Validation**: All forms use Zod schemas with React Hook Form integration
-- **Sanitization**: Comprehensive input sanitization in `/src/lib/sanitization.ts`
-- **Form validation helpers**: Available in `/src/hooks/useFormValidation.ts`
-- **Security**: XSS prevention, SQL injection protection, and rate limiting implemented
-- **Trading-specific validation**: Symbol validation, financial amount validation, risk parameter validation
+### Configuration
 
-### Error Monitoring & Configuration
-- **Error Monitoring**: Sentry integration with trading-specific error tracking
-- **Configuration Management**: Type-safe environment variable handling in `/src/lib/config.ts`
-- **Performance Monitoring**: Built-in performance measurement for critical operations
-- **Error Classification**: Trading-specific error types (connection, validation, order, calculation errors)
-- **Sensitive Data Protection**: Automatic sanitization of financial data in error reports
-- **Environment Support**: Development, staging, and production environment configurations
+**Frontend Config** (`src/lib/config.ts`):
+- Environment-based configuration
+- Feature flags for live/paper trading
+- API endpoints and timeouts
 
-### Accessibility & WCAG Compliance
-- **Screen Reader Support**: Comprehensive ARIA labeling and screen reader announcements
-- **Keyboard Navigation**: Full keyboard accessibility with trading-specific shortcuts
-- **Color Contrast**: WCAG 2.1 AA compliant color combinations with high contrast mode support
-- **Focus Management**: Intelligent focus trapping and restoration for modals and dialogs
-- **Semantic HTML**: Proper landmark roles, headings hierarchy, and semantic structure
-- **Trading Accessibility**: Specialized accessibility features for financial data and trading actions
-- **Skip Links**: Navigation shortcuts for keyboard users
-- **Motion Preferences**: Respects reduced motion preferences for users with vestibular disorders
+**Backend Config** (`backend/src/config.py`):
+- Broker credentials from environment
+- Server ports and CORS settings
+
+### Security Considerations
+
+- Paper trading is **default** - live trading requires explicit config
+- Credentials stored in `AuthManager` with encryption
+- All API calls include correlation IDs for audit trails
+- Rate limiting per broker to prevent API abuse
+- WebSocket connections auto-authenticate
+
+### Common Development Tasks
+
+**Adding a New Broker**:
+1. Create adapter in `backend/src/adapters/`
+2. Add broker type to `src/types/index.ts`
+3. Update `BrokerService` in `src/services/`
+4. Add UI in settings component
+
+**Creating a New Feature Component**:
+1. Create component in `src/components/features/[feature]/`
+2. Add lazy export in `src/components/lazy/index.ts`
+3. Update routing in `App.tsx`
+4. Add tab to sidebar if needed
+
+**Modifying API Endpoints**:
+1. Update backend route in `backend/src/routes/`
+2. Update types in `src/types/index.ts`
+3. Update service method in relevant service file
+4. Handle in `ApiIntegrationManager` if needed
 
 ### Performance Optimization
-- **Code Splitting**: Lazy-loaded components with React.Suspense for optimal bundle sizes
-- **Component Memoization**: Strategic use of React.memo and useMemo for expensive calculations
-- **Bundle Analysis**: Vite bundle analyzer integration for monitoring application size
-- **Lazy Loading**: Feature-based code splitting with preloading for critical components
-- **Memory Management**: Proper cleanup of subscriptions and event listeners
 
-### UI Development
-- Use existing UI components from `/components/ui/` before creating new ones
-- Follow the Tailwind CSS patterns established in the codebase
-- Respect the theme system using CSS custom properties
-- Use Lucide React icons consistently
-- Implement responsive design using Tailwind's responsive utilities
+- Components are code-split and lazy-loaded
+- Use `React.memo` for expensive renders
+- WebSocket messages are queued during reconnection
+- API responses are cached with configurable TTL
+- Rate limiting prevents API overload
 
-### Trading Feature Development
-- Use the comprehensive type system in `/src/types/` for trading objects
-- Follow the existing patterns for strategy, position, and trade management
-- Integrate with the existing Redux stores rather than creating component-level state
-- Use Recharts for any new financial visualizations
-- Maintain the mock data approach until backend integration
+### Monitoring & Debugging
 
-### Performance Considerations
-- Vite provides fast development builds with HMR
-- React 18 concurrent features are available
-- Redux provides efficient re-renders with proper selector usage
-- Recharts is optimized for financial data visualization
-- Consider virtualization for large data sets in tables/lists
+**Frontend Monitoring**:
+- Sentry integration for error tracking
+- `MonitoringService` for custom metrics
+- Correlation IDs link frontend/backend requests
+- Performance tracking in `ApiIntegrationManager`
+
+**Backend Monitoring**:
+- Health checks at `/health`
+- Diagnostics at `/diagnostics`
+- Structured logging with correlation IDs
+
+### Production Build
+
+The production build:
+- Minifies and removes console logs
+- Splits code for optimal loading
+- Includes Sentry source maps (needs auth token)
+- Builds to `dist/` directory
+
+### Claude Code Hooks
+
+TTS notifications are configured in `claude_code_config.json` using ElevenLabs API. Scripts in `claude-hooks/` handle the audio playback.
+
+## Claude Agents Directory
+
+The `claude-agents/` directory contains specialized Claude sub-agent configurations optimized for specific development domains in the Edgerunner v2 platform. Each agent provides focused, expert assistance for different aspects of development.
+
+### Available Agents
+
+| Agent | Focus Area | Primary Responsibilities |
+|-------|------------|-------------------------|
+| **claude-dev** | Development & Build | Vite config, TypeScript setup, dev server, dependencies |
+| **claude-ui** | UI/UX Design | Radix UI, Tailwind CSS, accessibility, responsive design |
+| **claude-api** | API Integration | FastAPI backend, broker adapters (IBKR/MT5/Bybit) |
+| **claude-backtest** | Strategy Testing | Backtesting engine, performance metrics, trade simulation |
+| **claude-tester** | Testing & QA | Vitest, React Testing Library, test coverage |
+
+### Agent Selection Guidelines
+
+**Use `claude-dev` when:**
+- Development server issues
+- Build configuration problems
+- Dependency management
+- TypeScript compilation errors
+
+**Use `claude-ui` when:**
+- Designing dashboard layouts
+- Implementing accessibility features
+- Creating responsive interfaces
+- Working with Radix UI components
+
+**Use `claude-api` when:**
+- Building backend endpoints
+- Integrating broker APIs
+- Creating WebSocket connections
+- Handling trading data flows
+
+**Use `claude-backtest` when:**
+- Developing strategy testing
+- Calculating performance metrics
+- Building simulation engines
+- Analyzing trading results
+
+**Use `claude-tester` when:**
+- Writing unit tests
+- Setting up test framework
+- Testing trading calculations
+- Ensuring code coverage
+
+### Agent Integration
+
+All agents are designed with knowledge of the Edgerunner v2 tech stack and architecture. They understand:
+- Project structure and path aliases (`@/`)
+- Component organization patterns
+- Trading-specific requirements and patterns
+- State management with Zustand
+- Testing strategies and frameworks
+- Build process and configuration
+
+The agents work collaboratively and can cross-reference each other's domains when needed (e.g., claude-ui working with claude-tester for accessibility testing).
 
 ## Important Notes
 
-- No backend is currently implemented - all data is mocked
-- Testing framework needs to be set up
-- The app uses a tab-based navigation system rather than routing
-- Theme switching is fully implemented with persistence
-- Error boundaries are critical - maintain them for new features
-- The build process requires both TypeScript compilation and Vite bundling
-
-## Development Reminders
-- Always provide a working URL when there's an update/changes especially on the frontend/backend
+- Always check if backend is running before frontend development
+- Use paper trading mode for testing (default)
+- Don't modify `src/components/ui/` directly - these are shadcn/ui components
+- Run type checking before committing: `npx tsc --noEmit`
+- API rate limits are broker-specific - check `RateLimiter` config
+- WebSocket reconnects automatically - don't manually reconnect
+- All new features should support both light and dark themes

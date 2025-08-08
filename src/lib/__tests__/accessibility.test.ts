@@ -80,14 +80,14 @@ describe('Screen Reader Utilities', () => {
     expect(announcements[0]?.textContent).toBe('Test message')
   })
 
-  it('should remove announcement elements after delay', (done) => {
+  it('should remove announcement elements after delay', async () => {
     ScreenReader.announce('Test message', 'polite')
     
-    setTimeout(() => {
-      const announcements = document.querySelectorAll('[aria-live]')
-      expect(announcements).toHaveLength(0)
-      done()
-    }, 1100) // Slightly longer than removal timeout
+    // Wait for removal timeout
+    await new Promise(resolve => setTimeout(resolve, 1100))
+    
+    const announcements = document.querySelectorAll('[aria-live]')
+    expect(announcements).toHaveLength(0)
   })
 
   it('should announce trading events with proper formatting', () => {
