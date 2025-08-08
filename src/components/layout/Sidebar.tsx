@@ -9,7 +9,8 @@ import {
   Home,
   Menu,
   ChevronLeft,
-  Zap
+  Zap,
+  Database
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
@@ -28,6 +29,7 @@ const navigationItems = [
   { id: "backtest", label: "Backtest", icon: TrendingUp },
   { id: "journal", label: "Trade Journal", icon: BookOpen },
   { id: "api-testing", label: "API Testing", icon: Zap },
+  { id: "flex-tester", label: "IBKR Flex", icon: Database },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "docs", label: "About / Docs", icon: FileText },

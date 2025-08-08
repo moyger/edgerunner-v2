@@ -3,6 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   TrendingUp, 
   TrendingDown, 
   DollarSign, 
@@ -32,6 +39,8 @@ import { StrategyConfigDialog } from "../strategy/StrategyConfigDialog";
 import { StrategyEditSheet } from "../strategy/StrategyEditSheet";
 import { StrategyComparisonDialog } from "../strategy/StrategyComparisonDialog";
 import { TradeJournal } from "../journal/TradeJournal";
+import { brokerService } from "@/services/brokers/BrokerService";
+import type { BrokerId, BrokerConnection } from "@/types";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -43,17 +52,52 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Mock data for the dashboard
-const accountData = {
-  totalEquity: 127450.32,
-  dailyPnL: 2340.12,
-  dailyPnLPercent: 1.87,
-  totalPnL: 27450.32,
-  totalPnLPercent: 27.45,
-  maxDrawdown: -8.2,
-  winRate: 68.4,
-  avgR: 1.85,
-  totalTrades: 347
+// Mock data for the dashboard - organized by broker
+const accountDataByBroker = {
+  all: {
+    totalEquity: 127450.32,
+    dailyPnL: 2340.12,
+    dailyPnLPercent: 1.87,
+    totalPnL: 27450.32,
+    totalPnLPercent: 27.45,
+    maxDrawdown: -8.2,
+    winRate: 68.4,
+    avgR: 1.85,
+    totalTrades: 347
+  },
+  ibkr: {
+    totalEquity: 85200.45,
+    dailyPnL: 1580.30,
+    dailyPnLPercent: 1.89,
+    totalPnL: 19200.45,
+    totalPnLPercent: 29.12,
+    maxDrawdown: -6.8,
+    winRate: 72.1,
+    avgR: 2.05,
+    totalTrades: 234
+  },
+  mt5: {
+    totalEquity: 32100.87,
+    dailyPnL: 560.82,
+    dailyPnLPercent: 1.78,
+    totalPnL: 6100.87,
+    totalPnLPercent: 23.47,
+    maxDrawdown: -9.5,
+    winRate: 61.8,
+    avgR: 1.52,
+    totalTrades: 89
+  },
+  bybit: {
+    totalEquity: 10149.00,
+    dailyPnL: 199.00,
+    dailyPnLPercent: 2.00,
+    totalPnL: 2149.00,
+    totalPnLPercent: 26.85,
+    maxDrawdown: -12.3,
+    winRate: 68.9,
+    avgR: 1.95,
+    totalTrades: 24
+  }
 };
 
 // Removed equityData - now handled by EquityChart component
@@ -68,11 +112,26 @@ const rMultipleData = [
   { range: "3R+", count: 54 }
 ];
 
-const openPositions = [
-  { ticker: "AAPL", side: "LONG", quantity: 100, entry: 175.20, current: 178.45, pnl: 325.00, pnlPercent: 1.85 },
-  { ticker: "TSLA", side: "SHORT", quantity: 50, entry: 245.80, current: 242.15, pnl: 182.50, pnlPercent: 1.49 },
-  { ticker: "NVDA", side: "LONG", quantity: 75, entry: 445.60, current: 438.90, pnl: -502.50, pnlPercent: -1.50 },
-];
+const openPositionsByBroker = {
+  all: [
+    { ticker: "AAPL", side: "LONG", quantity: 100, entry: 175.20, current: 178.45, pnl: 325.00, pnlPercent: 1.85, broker: "ibkr" },
+    { ticker: "TSLA", side: "SHORT", quantity: 50, entry: 245.80, current: 242.15, pnl: 182.50, pnlPercent: 1.49, broker: "ibkr" },
+    { ticker: "NVDA", side: "LONG", quantity: 75, entry: 445.60, current: 438.90, pnl: -502.50, pnlPercent: -1.50, broker: "mt5" },
+    { ticker: "EURUSD", side: "LONG", quantity: 10000, entry: 1.0850, current: 1.0875, pnl: 250.00, pnlPercent: 0.23, broker: "mt5" },
+    { ticker: "BTC/USDT", side: "LONG", quantity: 0.5, entry: 42000, current: 42850, pnl: 425.00, pnlPercent: 2.02, broker: "bybit" },
+  ],
+  ibkr: [
+    { ticker: "AAPL", side: "LONG", quantity: 100, entry: 175.20, current: 178.45, pnl: 325.00, pnlPercent: 1.85, broker: "ibkr" },
+    { ticker: "TSLA", side: "SHORT", quantity: 50, entry: 245.80, current: 242.15, pnl: 182.50, pnlPercent: 1.49, broker: "ibkr" },
+  ],
+  mt5: [
+    { ticker: "NVDA", side: "LONG", quantity: 75, entry: 445.60, current: 438.90, pnl: -502.50, pnlPercent: -1.50, broker: "mt5" },
+    { ticker: "EURUSD", side: "LONG", quantity: 10000, entry: 1.0850, current: 1.0875, pnl: 250.00, pnlPercent: 0.23, broker: "mt5" },
+  ],
+  bybit: [
+    { ticker: "BTC/USDT", side: "LONG", quantity: 0.5, entry: 42000, current: 42850, pnl: 425.00, pnlPercent: 2.02, broker: "bybit" },
+  ]
+};
 
 const activeStrategies = [
   { 
@@ -148,9 +207,21 @@ export const Dashboard = memo(function Dashboard() {
   const [showTradeJournal, setShowTradeJournal] = useState(false);
   const [tradeJournalStrategy, setTradeJournalStrategy] = useState<string | null>(null);
   const [strategies, setStrategies] = useState(activeStrategies);
+  const [selectedBroker, setSelectedBroker] = useState<string>("all");
+  const [brokerConnections, setBrokerConnections] = useState<Record<string, BrokerConnection>>({});
 
-  // Announce dashboard load and significant changes
+  // Load broker connections on mount
   useEffect(() => {
+    const loadBrokerConnections = async () => {
+      try {
+        const connections = await brokerService.getAllBrokerStatuses();
+        setBrokerConnections(connections);
+      } catch (error) {
+        console.error('Failed to load broker connections:', error);
+      }
+    };
+
+    loadBrokerConnections();
     // ScreenReader.announce('Dashboard loaded with trading overview', 'polite');
   }, []);
 
@@ -166,11 +237,37 @@ export const Dashboard = memo(function Dashboard() {
     }
   }, [strategies]);
 
+  // Get filtered data based on selected broker
+  const filteredAccountData = useMemo(() => {
+    return accountDataByBroker[selectedBroker as keyof typeof accountDataByBroker] || accountDataByBroker.all;
+  }, [selectedBroker]);
+
+  const filteredPositions = useMemo(() => {
+    return openPositionsByBroker[selectedBroker as keyof typeof openPositionsByBroker] || openPositionsByBroker.all;
+  }, [selectedBroker]);
+
+  // Get available brokers (connected + configured)
+  const availableBrokers = useMemo(() => {
+    const brokers = [
+      { value: "all", label: "All Accounts", connected: true },
+      { value: "ibkr", label: "Interactive Brokers", connected: brokerConnections.ibkr?.status === 'connected' },
+      { value: "mt5", label: "MetaTrader 5", connected: brokerConnections.mt5?.status === 'connected' },
+      { value: "bybit", label: "ByBit", connected: brokerConnections.bybit?.status === 'connected' },
+    ];
+    
+    // Only show brokers that have data or are connected
+    return brokers.filter(broker => 
+      broker.value === "all" || 
+      broker.connected || 
+      accountDataByBroker[broker.value as keyof typeof accountDataByBroker]
+    );
+  }, [brokerConnections]);
+
   // Memoize expensive chart data calculations
   const chartData = useMemo(() => ({
     rMultiple: rMultipleData,
-    positions: openPositions
-  }), []);
+    positions: filteredPositions
+  }), [filteredPositions]);
 
 
   const handleStrategyAction = (action: string, strategy: any) => {
@@ -230,8 +327,34 @@ export const Dashboard = memo(function Dashboard() {
 
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto">
-      {/* Market Status */}
-      <div className="flex justify-end">
+      {/* Header with Market Status and Account Filter */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Account:</span>
+            <Select value={selectedBroker} onValueChange={setSelectedBroker}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select account" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableBrokers.map((broker) => (
+                  <SelectItem key={broker.value} value={broker.value}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className={`w-2 h-2 rounded-full ${
+                          broker.connected ? 'bg-green-500' : 'bg-gray-400'
+                        }`}
+                        aria-label={broker.connected ? 'Connected' : 'Disconnected'}
+                      />
+                      {broker.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         <Badge 
           variant="secondary" 
           className="bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300"
@@ -254,14 +377,14 @@ export const Dashboard = memo(function Dashboard() {
             <CardContent>
               <div 
                 className="text-2xl font-bold"
-                aria-label={`Total equity: $${accountData.totalEquity.toLocaleString()}`}
+                aria-label={`Total equity: $${filteredAccountData.totalEquity.toLocaleString()}`}
               >
-                ${accountData.totalEquity.toLocaleString()}
+                ${filteredAccountData.totalEquity.toLocaleString()}
               </div>
               <div className="flex items-center text-xs text-green-600">
                 <TrendingUp className="h-3 w-3 mr-1" aria-hidden="true" />
-                <span aria-label={`Up ${accountData.totalPnLPercent} percent all time`}>
-                  +{accountData.totalPnLPercent}% all time
+                <span aria-label={`Up ${filteredAccountData.totalPnLPercent} percent all time`}>
+                  +{filteredAccountData.totalPnLPercent}% all time
                 </span>
               </div>
             </CardContent>
@@ -275,14 +398,14 @@ export const Dashboard = memo(function Dashboard() {
             <CardContent>
               <div 
                 className="text-2xl font-bold text-green-600"
-                aria-label={`Daily profit and loss: positive $${accountData.dailyPnL.toLocaleString()}`}
+                aria-label={`Daily profit and loss: positive $${filteredAccountData.dailyPnL.toLocaleString()}`}
               >
-                +${accountData.dailyPnL.toLocaleString()}
+                +${filteredAccountData.dailyPnL.toLocaleString()}
               </div>
               <div className="flex items-center text-xs text-green-600">
                 <TrendingUp className="h-3 w-3 mr-1" aria-hidden="true" />
-                <span aria-label={`Up ${accountData.dailyPnLPercent} percent today`}>
-                  +{accountData.dailyPnLPercent}% today
+                <span aria-label={`Up ${filteredAccountData.dailyPnLPercent} percent today`}>
+                  +{filteredAccountData.dailyPnLPercent}% today
                 </span>
               </div>
             </CardContent>
@@ -296,9 +419,9 @@ export const Dashboard = memo(function Dashboard() {
             <CardContent>
               <div 
                 className="text-2xl font-bold text-red-600"
-                aria-label={`Maximum drawdown: ${Math.abs(accountData.maxDrawdown)} percent`}
+                aria-label={`Maximum drawdown: ${Math.abs(filteredAccountData.maxDrawdown)} percent`}
               >
-                {accountData.maxDrawdown}%
+                {filteredAccountData.maxDrawdown}%
               </div>
               <p className="text-xs text-muted-foreground">Peak to trough</p>
             </CardContent>
@@ -312,11 +435,11 @@ export const Dashboard = memo(function Dashboard() {
             <CardContent>
               <div 
                 className="text-2xl font-bold"
-                aria-label={`Win rate: ${accountData.winRate} percent`}
+                aria-label={`Win rate: ${filteredAccountData.winRate} percent`}
               >
-                {accountData.winRate}%
+                {filteredAccountData.winRate}%
               </div>
-              <p className="text-xs text-muted-foreground">{accountData.totalTrades} total trades</p>
+              <p className="text-xs text-muted-foreground">{filteredAccountData.totalTrades} total trades</p>
             </CardContent>
           </Card>
         </div>
@@ -400,8 +523,8 @@ export const Dashboard = memo(function Dashboard() {
             
             <div className="space-y-1" role="gridcell">
               <p className="text-sm text-muted-foreground">Avg R-Multiple</p>
-              <p className="text-2xl font-bold" aria-label={`Average R-Multiple: ${accountData.avgR}R`}>
-                {accountData.avgR}R
+              <p className="text-2xl font-bold" aria-label={`Average R-Multiple: ${filteredAccountData.avgR}R`}>
+                {filteredAccountData.avgR}R
               </p>
               <p className="text-xs text-muted-foreground">Risk-reward ratio</p>
             </div>
@@ -423,7 +546,7 @@ export const Dashboard = memo(function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3" role="list" aria-label="Current open trading positions">
-              {openPositions.map((position, index) => (
+              {filteredPositions.map((position, index) => (
                 <div 
                   key={index} 
                   className="flex items-center justify-between p-3 border rounded-lg"
@@ -438,8 +561,20 @@ export const Dashboard = memo(function Dashboard() {
                       {position.side}
                     </Badge>
                     <div>
-                      <p className="font-medium">{position.ticker}</p>
-                      <p className="text-sm text-muted-foreground">{position.quantity} shares</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{position.ticker}</p>
+                        {selectedBroker === "all" && position.broker && (
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            {position.broker.toUpperCase()}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {typeof position.quantity === 'number' && position.quantity > 1000 
+                          ? `${position.quantity.toLocaleString()} units`
+                          : `${position.quantity} ${position.quantity === 1 ? 'share' : 'shares'}`
+                        }
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">

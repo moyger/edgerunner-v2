@@ -36,6 +36,11 @@ export const LazyApiTestingPage = createLazyComponent(
   'default'
 )
 
+export const LazyFlexTester = createLazyComponent(
+  () => import('../features/flex-tester/FlexTester'),
+  'default'
+)
+
 // Lazy load strategy sub-components for additional granular loading
 export const LazyStrategyConfigDialog = createLazyComponent(
   () => import('../features/strategy/StrategyConfigDialog').then(m => ({ default: m.StrategyConfigDialog })),

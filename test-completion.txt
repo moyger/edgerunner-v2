@@ -1,0 +1,2 @@
+This is a test file to demonstrate task completion notification.
+When this task is marked as complete, it should trigger a "Task completed" sound.

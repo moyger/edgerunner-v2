@@ -53,6 +53,7 @@ export const useUIStore = create<UIStore>()(
             case 'backtest': return 'Backtest';
             case 'journal': return 'Trade Journal';
             case 'api-testing': return 'API Testing';
+            case 'flex-tester': return 'IBKR Flex Query';
             case 'settings': return 'Settings';
             case 'notifications': return 'Notifications';
             case 'docs': return 'Documentation';
@@ -68,6 +69,7 @@ export const useUIStore = create<UIStore>()(
             case 'backtest': return 'Test your strategies against historical market data';
             case 'journal': return 'Complete trading history and performance analytics';
             case 'api-testing': return 'Validate broker connections and API integrity before integration';
+            case 'flex-tester': return 'Test and analyze IBKR Flex Query data with performance metrics';
             case 'settings': return 'Configure your trading environment and preferences';
             case 'notifications': return 'Stay informed with real-time alerts and updates';
             case 'docs': return 'Learn how to maximize your trading performance';

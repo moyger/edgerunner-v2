@@ -16,13 +16,13 @@ try:
     # Try relative imports first (when run as module)
     from .config import settings
     from .models import HealthResponse
-    from .routes import broker, strategy, system
+    from .routes import broker, strategy, system, flex
     from .services.broker_service import BrokerService
 except ImportError:
     # Fall back to absolute imports (when run as script)
     from config import settings
     from models import HealthResponse
-    from routes import broker, strategy, system
+    from routes import broker, strategy, system, flex
     from services.broker_service import BrokerService
 
 # Ensure log directories exist before configuring handlers
@@ -113,6 +113,12 @@ app.include_router(
     system.router,
     prefix="/api",
     tags=["system"]
+)
+
+# IBKR Flex Query routes
+app.include_router(
+    flex.router,
+    tags=["flex"]
 )
 
 

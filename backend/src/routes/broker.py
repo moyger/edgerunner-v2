@@ -586,3 +586,104 @@ async def get_mt5_symbols(limit: int = 50):
     except Exception as e:
         logger.error(f"Failed to get MT5 symbols: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ByBit-specific endpoints
+@router.post("/broker/bybit/auto-connect", response_model=BrokerConnection)
+async def bybit_auto_connect(
+    broker_service: BrokerService = Depends(get_broker_service)
+):
+    """Attempt auto-connection to Bybit using environment credentials"""
+    try:
+        from ..config import settings
+        from ..adapters.bybit_adapter import BybitCredentials
+        
+        # Check if credentials are configured
+        if not settings.bybit_api_key or not settings.bybit_secret_key:
+            return BrokerConnection(
+                id="bybit",
+                name="Bybit Exchange",
+                status="error",
+                last_checked=datetime.now(),
+                error="Bybit API credentials not configured in environment"
+            )
+        
+        # Create credentials from environment
+        credentials = type('BybitCredentials', (), {
+            'api_key': settings.bybit_api_key,
+            'api_secret': settings.bybit_secret_key,
+            'testnet': 'testnet' in settings.bybit_base_url,
+            'recv_window': settings.bybit_recv_window
+        })()
+        
+        # Connect to Bybit
+        connection = await broker_service.connect_broker("bybit", credentials)
+        return connection
+        
+    except Exception as e:
+        logger.error(f"Bybit auto-connect failed: {e}")
+        return BrokerConnection(
+            id="bybit",
+            name="Bybit Exchange",
+            status="error",
+            last_checked=datetime.now(),
+            error=str(e)
+        )
+
+
+@router.get("/broker/bybit/config", response_model=dict)
+async def get_bybit_config():
+    """Get Bybit configuration status"""
+    try:
+        from ..config import settings
+        
+        return {
+            "configured": bool(settings.bybit_api_key and settings.bybit_secret_key),
+            "api_key": settings.bybit_api_key[:8] + "..." if settings.bybit_api_key else None,
+            "base_url": settings.bybit_base_url,
+            "testnet": 'testnet' in settings.bybit_base_url,
+            "recv_window": settings.bybit_recv_window,
+            "status": "ready" if (settings.bybit_api_key and settings.bybit_secret_key) else "needs_configuration"
+        }
+    except Exception as e:
+        logger.error(f"Failed to get Bybit config: {e}")
+        return {
+            "configured": False,
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@router.get("/broker/bybit/symbols", response_model=dict)
+async def get_bybit_symbols(
+    category: str = "spot",
+    limit: int = 50,
+    broker_service: BrokerService = Depends(get_broker_service)
+):
+    """Get available Bybit trading symbols"""
+    try:
+        adapter = broker_service.get_adapter("bybit")
+        
+        # Check if connected, attempt auto-connect if not
+        status = await adapter.get_connection_status()
+        if status.status != "connected":
+            await bybit_auto_connect(broker_service)
+        
+        # Get popular crypto symbols for now
+        popular_symbols = [
+            "BTCUSDT", "ETHUSDT", "ADAUSDT", "BNBUSDT", "DOTUSDT",
+            "XRPUSDT", "LINKUSDT", "LTCUSDT", "BCHUSDT", "XLMUSDT",
+            "UNIUSDT", "VETUSDT", "FILUSDT", "TRXUSDT", "ETCUSDT",
+            "THETAUSDT", "KLAYUSDT", "AVAXUSDT", "ATOMUSDT", "NEOUSDT"
+        ]
+        
+        return {
+            "symbols": popular_symbols[:limit],
+            "category": category,
+            "count": min(len(popular_symbols), limit),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get Bybit symbols: {e}")
+        raise HTTPException(status_code=400, detail=str(e))

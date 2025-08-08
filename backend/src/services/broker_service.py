@@ -11,6 +11,7 @@ try:
     from ..adapters.base import BrokerAdapter
     from ..adapters.ibkr_adapter import IBKRAdapter
     from ..adapters.mt5_adapter import MT5Adapter
+    from ..adapters.bybit_adapter import BybitAdapter
     from ..models import (
         BrokerType, BrokerConnection, BrokerCredentials, AccountSummary, 
         Position, Order, MarketData, HistoricalData, TestResult, OrderRequest,
@@ -20,6 +21,7 @@ except ImportError:
     from adapters.base import BrokerAdapter
     from adapters.ibkr_adapter import IBKRAdapter
     from adapters.mt5_adapter import MT5Adapter
+    from adapters.bybit_adapter import BybitAdapter
     from models import (
         BrokerType, BrokerConnection, BrokerCredentials, AccountSummary, 
         Position, Order, MarketData, HistoricalData, TestResult, OrderRequest,
@@ -57,8 +59,9 @@ class BrokerService:
             else:
                 logger.info("MT5 adapter initialized using mock MT5 (non-Windows)")
 
-            # TODO: Initialize other adapters when implemented
-            # self.adapters[BrokerType.BYBIT] = ByBitAdapter()
+            # Initialize Bybit adapter
+            self.adapters[BrokerType.BYBIT] = BybitAdapter()
+            logger.info("Bybit adapter initialized")
 
         except Exception as e:
             logger.error(f"Failed to initialize adapters: {e}")

@@ -1,7 +1,7 @@
 // Core Trading Platform Types
 // These types preserve all existing component interfaces while adding structure
 
-export type TabId = 'dashboard' | 'strategies' | 'backtest' | 'journal' | 'settings' | 'notifications' | 'docs' | 'api-testing';
+export type TabId = 'dashboard' | 'strategies' | 'backtest' | 'journal' | 'settings' | 'notifications' | 'docs' | 'api-testing' | 'flex-tester';
 
 export interface Strategy {
   id: string;

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Hook triggered!' && python3 .claude/hooks/pre_tool_use.py"
+          }
+        ]
+      }
+    ]
+  }
+}

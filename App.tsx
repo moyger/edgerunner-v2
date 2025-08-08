@@ -19,6 +19,7 @@ import {
   LazySettings,
   LazyDocumentation,
   LazyApiTestingPage,
+  LazyFlexTester,
   preloadCriticalComponents
 } from "./src/components/lazy";
 
@@ -127,6 +128,8 @@ export default function App() {
         return <LazyDocumentation />;
       case "api-testing":
         return <LazyApiTestingPage />;
+      case "flex-tester":
+        return <LazyFlexTester />;
       default:
         return <LazyDashboard />;
     }

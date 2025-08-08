@@ -11,40 +11,59 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check if there's a saved theme in localStorage
-    const savedTheme = localStorage.getItem("edgerunner-theme");
-    if (savedTheme === "light" || savedTheme === "dark") {
-      return savedTheme;
-    }
-    
-    // Check system preference
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
-    }
-    
+    // 1) Prefer what the document already has (set by early script)
+    try {
+      const hasDarkClass = document.documentElement.classList.contains("dark");
+      if (hasDarkClass) return "dark";
+    } catch {}
+
+    // 2) Fallback to saved preference
+    try {
+      const savedTheme = localStorage.getItem("edgerunner-theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        return savedTheme as Theme;
+      }
+    } catch {}
+
+    // 3) Finally, use system preference
+    try {
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        return "dark";
+      }
+    } catch {}
+
     return "light";
   });
 
   useEffect(() => {
     // Apply theme to document
     const root = document.documentElement;
+    const body = document.body;
+
     if (theme === "dark") {
       root.classList.add("dark");
+      body.classList.add("dark");
     } else {
       root.classList.remove("dark");
+      body.classList.remove("dark");
     }
-    
+
+    // Ensure immediate visual update and expose theme to CSS
+    root.style.colorScheme = theme;
+    root.setAttribute("data-theme", theme);
+
     // Save to localStorage
     localStorage.setItem("edgerunner-theme", theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === "light" ? "dark" : "light");
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
   };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
+      <div className={theme === "dark" ? "dark" : undefined}>{children}</div>
     </ThemeContext.Provider>
   );
 }

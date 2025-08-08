@@ -1,0 +1,10 @@
+{
+  "unknown": {
+    "total_tasks": 1,
+    "successful_tasks": 0,
+    "failed_tasks": 0,
+    "cancelled_tasks": 0,
+    "total_runtime": 0,
+    "last_activity": "2025-08-08T16:20:11.146932"
+  }
+}

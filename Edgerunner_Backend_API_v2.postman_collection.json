@@ -1,0 +1,718 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Edgerunner Backend API",
+		"description": "Complete API collection for Edgerunner trading platform backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Core Endpoints",
+			"item": [
+				{
+					"name": "Root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					}
+				},
+				{
+					"name": "API Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"status"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "System Management",
+			"item": [
+				{
+					"name": "System Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/system/info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"system",
+								"info"
+							]
+						}
+					}
+				},
+				{
+					"name": "System Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/system/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"system",
+								"health"
+							]
+						}
+					}
+				},
+				{
+					"name": "System Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/system/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"system",
+								"config"
+							]
+						}
+					}
+				},
+				{
+					"name": "Startup Checklist",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/system/startup-checklist",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"system",
+								"startup-checklist"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Strategy Management",
+			"item": [
+				{
+					"name": "Get All Strategies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/strategies",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"strategies"
+							]
+						}
+					}
+				},
+				{
+					"name": "Deploy Strategy",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/strategies/mean_reversion_v1/deploy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"strategies",
+								"mean_reversion_v1",
+								"deploy"
+							]
+						}
+					}
+				},
+				{
+					"name": "Stop Strategy",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/strategies/mean_reversion_v1/stop",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"strategies",
+								"mean_reversion_v1",
+								"stop"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Strategy Performance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/strategies/mean_reversion_v1/performance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"strategies",
+								"mean_reversion_v1",
+								"performance"
+							]
+						}
+					}
+				},
+				{
+					"name": "Run Backtest",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/backtest/run",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"backtest",
+								"run"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Broker Management",
+			"item": [
+				{
+					"name": "Connect Broker",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"broker\": \"ibkr\",\n    \"credentials\": {\n        \"host\": \"127.0.0.1\",\n        \"port\": 7497,\n        \"client_id\": 1\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/broker/connect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"connect"
+							]
+						}
+					}
+				},
+				{
+					"name": "Disconnect Broker",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"broker\": \"ibkr\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/broker/disconnect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"disconnect"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Broker Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/status?broker=ibkr",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"status"
+							],
+							"query": [
+								{
+									"key": "broker",
+									"value": "ibkr"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Broker Statuses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/status/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"status",
+								"all"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Account & Trading",
+			"item": [
+				{
+					"name": "Get Account Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/account/summary?broker=ibkr",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"summary"
+							],
+							"query": [
+								{
+									"key": "broker",
+									"value": "ibkr"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Positions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/positions?broker=ibkr",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"positions"
+							],
+							"query": [
+								{
+									"key": "broker",
+									"value": "ibkr"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Place Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"broker\": \"ibkr\",\n    \"symbol\": \"AAPL\",\n    \"action\": \"BUY\",\n    \"quantity\": 1,\n    \"order_type\": \"MKT\",\n    \"account\": \"DU5601964\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/trade",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"trade"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Market Data",
+			"item": [
+				{
+					"name": "Get Market Data",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/market-data?broker=ibkr&symbol=AAPL",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"market-data"
+							],
+							"query": [
+								{
+									"key": "broker",
+									"value": "ibkr"
+								},
+								{
+									"key": "symbol",
+									"value": "AAPL"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Historical Data",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/historical-data?broker=ibkr&symbol=AAPL&duration=1 D&bar_size=1 min",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"historical-data"
+							],
+							"query": [
+								{
+									"key": "broker",
+									"value": "ibkr"
+								},
+								{
+									"key": "symbol",
+									"value": "AAPL"
+								},
+								{
+									"key": "duration",
+									"value": "1 D"
+								},
+								{
+									"key": "bar_size",
+									"value": "1 min"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "MT5 Specific",
+			"item": [
+				{
+					"name": "MT5 Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/mt5/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"mt5",
+								"config"
+							]
+						}
+					}
+				},
+				{
+					"name": "MT5 Auto Connect",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/mt5/auto-connect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"mt5",
+								"auto-connect"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "ByBit Specific",
+			"item": [
+				{
+					"name": "ByBit Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/bybit/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"bybit",
+								"config"
+							]
+						}
+					}
+				},
+				{
+					"name": "ByBit Auto Connect",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/bybit/auto-connect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"bybit",
+								"auto-connect"
+							]
+						}
+					}
+				},
+				{
+					"name": "ByBit Symbols",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/broker/bybit/symbols?category=spot&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"bybit",
+								"symbols"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "spot"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "IBKR Flex Queries",
+			"item": [
+				{
+					"name": "Flex Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/flex/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"flex",
+								"health"
+							]
+						}
+					}
+				},
+				{
+					"name": "Flex Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/flex/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"flex",
+								"config"
+							]
+						}
+					}
+				},
+				{
+					"name": "Execute Flex Query (Trades)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/flex/execute/trades",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"flex",
+								"execute",
+								"trades"
+							]
+						}
+					}
+				},
+				{
+					"name": "Execute Flex Query (Positions)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/flex/execute/positions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"flex",
+								"execute",
+								"positions"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Testing & Diagnostics",
+			"item": [
+				{
+					"name": "Run Broker Tests",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"broker\": \"ibkr\",\n    \"categories\": [\"connection\", \"market_data\", \"account\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/broker/test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"broker",
+								"test"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		}
+	]
+}
